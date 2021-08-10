@@ -1,6 +1,6 @@
-![Build Status](https://github.com/Dead-tech/tmdc/actions/workflows/windows.yml/badge.svg)
-![Build Status](https://github.com/Dead-tech/tmdc/actions/workflows/linux.yml/badge.svg)
-![Build Status](https://github.com/Dead-tech/tmdc/actions/workflows/macos.yml/badge.svg)
+![Build Status](https://github.com/Dead-tech/dead-lang/actions/workflows/windows.yml/badge.svg)
+![Build Status](https://github.com/Dead-tech/dead-lang/actions/workflows/linux.yml/badge.svg)
+![Build Status](https://github.com/Dead-tech/dead-lang/actions/workflows/macos.yml/badge.svg)
 
 # Dead-lang
 **_This project is still in active development, use it at your onw risk!_**  
