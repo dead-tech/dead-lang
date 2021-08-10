@@ -1,9 +1,10 @@
 # Dead-lang
-**_This project is still in active development, use it at your onw risk!_**
+**_This project is still in active development, use it at your onw risk!_**  
+
 Programming Language that compiles to the VM Bytecode.
 
 ## Language
-**_DISCLAIMER: The language itself hasn't beend developed yet!_**
+**_DISCLAIMER: The language itself hasn't been developed yet!_**
 
 ## Vm
 There's a stack virtual machine that has its own bytecode, that for now implements these instructions:
