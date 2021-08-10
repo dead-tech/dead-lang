@@ -1,13 +1,5 @@
 #include "instructions.hpp"
 
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning( disable: 4100 )
-#elif defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-
 namespace vm::instructions
 {
 
@@ -28,13 +20,13 @@ namespace vm::instructions
 		stack.ip++;
 	}
 
-	void pop(Stack& stack, const Instruction& instruction)
+	void pop(Stack& stack, [[maybe_unused]] const Instruction& instruction)
 	{
 		stack.pop();
 		stack.ip++;
 	}
 
-	void swap(Stack& stack, const Instruction& instruction)
+	void swap(Stack& stack, [[maybe_unused]] const Instruction& instruction)
 	{
 		const Object a(std::move(stack.top()));
 		stack.pop();
@@ -46,33 +38,27 @@ namespace vm::instructions
 		stack.ip++;
 	}
 
-	void print_str(Stack& stack, const Instruction& instruction)
+	void print_str(Stack& stack, [[maybe_unused]] const Instruction& instruction)
 	{
 		std::cout << std::get<std::string_view>(stack.top().type) << '\n';
 		stack.ip++;
 	}
 
-	void print(Stack& stack, const Instruction& instruction)
+	void print(Stack& stack, [[maybe_unused]] const Instruction& instruction)
 	{
 		std::cout << std::get<int32_t>(stack.top().type) << '\n';
 		stack.ip++;
 	}
 
-	void nop(Stack& stack, const Instruction& instruction)
+	void nop(Stack& stack, [[maybe_unused]] const Instruction& instruction)
 	{
 		stack.ip++;
 	}
 
-	void halt(Stack& stack, const Instruction& instruction)
+	void halt(Stack& stack, [[maybe_unused]] const Instruction& instruction)
 	{
 		stack.ip++;
 		std::cout << "Shutdown!" << '\n';
 		exit(0);
 	}
 }
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#elif defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
