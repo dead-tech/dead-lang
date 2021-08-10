@@ -3,7 +3,7 @@
 ![Build Status](https://github.com/Dead-tech/dead-lang/actions/workflows/macos.yml/badge.svg)
 
 # Dead-lang
-**_This project is still in active development, use it at your onw risk!_**  
+**_This project is still in active development, use it at your own risk!_**  
 
 Programming Language that compiles to the VM Bytecode.
 
