@@ -33,14 +33,35 @@ This project currently has zero dependecies other than the standard library.
 In order to build the project in VS2019 on Windows, you need to have the CMake Projects Extensions. 
 Once you have that installed you can open the project by selecting the root [CMakeLists.txt file](CMakeLists.txt), and then build from there like any other project in VS2019.
 
-### CMake on POSIX systems
-This hasn't been tested yet, but it should be enough to do the following steps:
-
+### CMake Visual Studio Generator on Windows
 ```terminal
-$ cmake -S. -B<build folder>
-$ cmake --build <build folder>
+$ cmake -S. -B <build folder> -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Debug||Release
+$ cmake --build <build folder> --config Debug||Release
 ```
-Executable should be placed in <build folder>/src/dead-lang
+
+### CMake on Windows
+```terminal
+$ cmake -S. -B <build foldeR> -DCMAKE_BUILD_TYPE=Debug||Release
+$ cmake --build <build folder> --config Debug||Release
+```
+
+### CMake XCode Generator on MacOS
+```terminal
+$ cmake -S. -B <build folder> -G "Xcode" -DCMAKE_BUILD_TYPE=Debug||Release
+$ cmake --build <build folder> --config Debug||Release
+```
+
+### Cmake on MacOS
+```terminal
+$ cmake -S. -B <build folder> -DCMAKE_BUILD_TYPE=Debug||Release
+$ cmake --build <build folder> --config Debug||Release
+```
+
+### CMake on Linux
+```terminal
+$ cmake -S. -B <build folder> -DCMAKE_BUILD_TYPE=Debug||Release
+$ cmake --build <build folder> --config Debug||Release
+```
 
 ## Usage
 To use the stack virtual machine (the only thing implemented so far) it's as simple as:
