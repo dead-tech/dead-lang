@@ -5,8 +5,8 @@
 #include <string>
 #include <fstream>
 
-#include "util/sv.hpp"
-#include "vm/instructions.hpp"
+#include "../util/sv.hpp"
+#include "instructions.hpp"
 
 namespace vm 
 {

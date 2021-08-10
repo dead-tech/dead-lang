@@ -1,7 +1,7 @@
 #ifndef VM_HPP
 #define VM_HPP
 
-#include "../parser.hpp"
+#include "parser.hpp"
 
 namespace vm
 {
