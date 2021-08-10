@@ -51,7 +51,7 @@ $ cmake -S. -B <build folder> -G "Xcode" -DCMAKE_BUILD_TYPE=Debug||Release
 $ cmake --build <build folder> --config Debug||Release
 ```
 
-### Cmake on MacOS
+### CMake on MacOS
 ```terminal
 $ cmake -S. -B <build folder> -DCMAKE_BUILD_TYPE=Debug||Release
 $ cmake --build <build folder> --config Debug||Release
