@@ -14,6 +14,6 @@ namespace vm
 	std::string_view parse_op_code(const std::string_view line);
 	std::optional<std::string_view> parse_string_literal(std::string_view line);
 	instructions::Instruction parse_line(const std::string_view line) noexcept;
-};
+}
 
 #endif //PARSER_HPP

@@ -12,4 +12,4 @@ namespace vm
 			instructions::map[instruction.op_code](stack, instruction);
 		}
 	}
-};
+}

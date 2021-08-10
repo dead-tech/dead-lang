@@ -12,6 +12,6 @@ namespace vm
 	private:
 		Stack stack;
 	};
-};
+}
 
 #endif //VM_HPP

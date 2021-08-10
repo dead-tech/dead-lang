@@ -9,6 +9,6 @@
 namespace sv
 {
 	std::optional<std::vector<int32_t>> split_sv_to_int(std::string_view sv, const char delimiter = ',') noexcept;
-};
+}
 
 #endif //SV_HPP

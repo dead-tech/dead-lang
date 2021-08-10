@@ -22,4 +22,4 @@ namespace vm
 	{
 		data.push(obj);
 	}
-};
+}

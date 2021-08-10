@@ -23,4 +23,4 @@ namespace sv
 
 		return std::vector{ std::atoi(std::string{sv}.c_str()) };
 	}
-};
+}

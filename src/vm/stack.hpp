@@ -37,5 +37,5 @@ namespace vm
 	private:
 		std::stack<Object> data;
 	};
-};
+}
 #endif// STACK_HPP

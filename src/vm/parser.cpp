@@ -58,4 +58,4 @@ namespace vm {
 		return instructions::Instruction{ .op_code = op_code, .string_literal = string_literal, .args = args };
 
 	}
-};
+}

@@ -1,5 +1,13 @@
 #include "instructions.hpp"
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning( disable: 4100 )
+#elif defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 namespace vm::instructions
 {
 
@@ -62,3 +70,9 @@ namespace vm::instructions
 		exit(0);
 	}
 }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#elif defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
