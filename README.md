@@ -33,11 +33,10 @@ Once you have that installed you can open the project by selecting the root [CMa
 This hasn't been tested yet, but it should be enough to do the following steps:
 
 ```terminal
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
+$ cmake -S. -B<build folder>
+$ cmake --build <build folder>
 ```
+Executable should be placed in <build folder>/src/dead-lang
 
 ## Usage
 To use the stack virtual machine (the only thing implemented so far) it's as simple as:
