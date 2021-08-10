@@ -22,10 +22,10 @@ There's a stack virtual machine that has its own bytecode, that for now implemen
 * `nop`
 * `halt`
 
-For more informations about the instructions and their usage checkout the [examples folder](examples/) in the repo.
+For more information about the instructions and their usage checkout the [examples folder](examples/) in the repo.
 
 ## Dependecies
-This project currently has zero dependecies other than the standard library.
+This project currently has zero dependencies other than the standard library.
 
 ## Building
 
