@@ -20,15 +20,15 @@ jobs:
     - name: Configure CMake
       run: cmake -S. -B ${{github.workspace}}/build -G "Xcode" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target ALL_BUILD -v
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
   make:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
     - name: Check CMake
       run: cmake --version
-    - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
+    - name: Configure CMake
+      run: cmake -S. -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
     - name: Build
-      run: cmake --build build --target all -v
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
  
