@@ -65,7 +65,7 @@ namespace vm::instructions {
             throw VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value");
         }
 
-        const auto is_number = [](const std::string &str) {
+        const auto is_number = [](const std::string &str) -> int {
             return std::ranges::all_of(str.begin(), str.end(), [](const char ch) { return std::isdigit(ch) != 0; });
         };
 
