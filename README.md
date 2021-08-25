@@ -15,6 +15,8 @@ There's a stack virtual machine that has its own bytecode, that for now implemen
 
 * `pushstr <dquoted string>`
 * `push <number>`
+* `set <varname> <string||number>`
+* `printvar <varname>`
 * `printstr`
 * `print`
 * `pop`
