@@ -1,55 +1,70 @@
 #ifndef INSTRUCTIONS_HPP
 #define INSTRUCTIONS_HPP
 
-#include <iostream>
-#include <unordered_map>
-#include <optional>
-#include <vector>
+#include "../util/sv.hpp"
+#include "exceptions.hpp"
 #include "stack.hpp"
+#include <algorithm>
+#include <any>
+#include <iostream>
+#include <optional>
+#include <unordered_map>
+#include <vector>
 
-namespace vm::instructions 
-{
-	using OpCode = std::string_view;
-	using StringLiteral = std::optional<std::string_view>;
-	using Arguments = std::vector<int32_t>;
+namespace vm {
+    using VarMap = std::unordered_map<std::string, std::any>;
+    struct VmState {
+        Stack stack;
+        VarMap vars;
+    };
+}// namespace vm
 
-	struct Instruction
-	{
-		std::string_view op_code;
-		std::optional<std::string_view> string_literal;
-		std::vector<int32_t> args;
-	};
+namespace vm::instructions {
+    using OpCode = std::string_view;
+    using Arguments = std::vector<std::string>;
 
-	using FnPtr = void (*)(Stack&, const Instruction&);
-	using namespace std::literals;
+    struct Instruction {
+        OpCode op_code;
+        Arguments args;
+        std::size_t line_number;
+    };
 
-	void push_str(Stack& stack, const Instruction& instruction);
+    using FnPtr = void (*)(VmState &, const Instruction &);
+    using namespace std::literals;
 
-	void push(Stack& stack, const Instruction& instruction);
+    void push_str(VmState &state, const Instruction &instruction);
 
-	void pop(Stack& stack, const Instruction& instruction);
+    void push(VmState &state, const Instruction &instruction);
 
-	void swap(Stack& stack, const Instruction& instruction);
+    void pop(VmState &state, const Instruction &instruction);
 
-	void print_str(Stack& stack, const Instruction& instruction);
+    void swap(VmState &state, const Instruction &instruction);
 
-	void print(Stack& stack, const Instruction& instruction);
+    void print_str(VmState &state, const Instruction &instruction);
 
-	void nop(Stack& stack, const Instruction& instruction);
+    void print(VmState &state, const Instruction &instruction);
 
-	void halt(Stack& stack, const Instruction& instruction);
+    void set(VmState &state, const Instruction &instruction);
 
-	inline std::unordered_map<std::string_view, FnPtr> map =
-	{
-		{"pushstr"sv, &push_str},
-		{"push"sv, &push},
-		{"pop"sv, &pop},
-		{"swap"sv, &swap},
-		{"printstr"sv, &print_str},
-		{"print"sv, &print},
-		{"nop"sv, &nop},
-		{"halt"sv, &halt},
-	};
-}
+    void print_var(VmState &state, [[maybe_unused]] const Instruction &instruction);
 
-#endif // INSTRUCTIONS_HPP
+    void nop(VmState &state, const Instruction &instruction);
+
+    void halt(VmState &state, const Instruction &instruction);
+
+    inline std::unordered_map<std::string_view, FnPtr> map =
+            {
+                    {"pushstr"sv, &push_str},
+                    {"push"sv, &push},
+                    {"pop"sv, &pop},
+                    {"swap"sv, &swap},
+                    {"printstr"sv, &print_str},
+                    {"print"sv, &print},
+                    {"set"sv, &set},
+                    {"printvar"sv, &print_var},
+                    {"nop"sv, &nop},
+                    {"halt"sv, &halt},
+    };
+}// namespace vm::instructions
+
+#endif// INSTRUCTIONS_HPP

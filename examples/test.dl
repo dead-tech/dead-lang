@@ -1,15 +1,14 @@
-pushstr "It works!"
-printstr
-push 1
-print
-pop
-push 0
-print
-pushstr "Return Code was 0"
-printstr
-nop
-pushstr "Swapped"
-push 3
+set string1 "Dopo "
+set num "2131231232 "
+set string2 "volte dovrebbe funzionare!!"
+pushstr "Ciao Antonio!"
+pushstr "Funzionaaaah!!!"
 swap
 printstr
+printvar string1
+printvar num
+printvar string2
+pop
+printstr
+nop
 halt

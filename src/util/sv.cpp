@@ -1,26 +1,49 @@
 #include "sv.hpp"
-namespace sv
-{
-	std::optional<std::vector<int32_t>> split_sv_to_int(std::string_view sv, const char delimiter) noexcept
-	{
-		if (sv.empty())
-		{
-			return std::nullopt;
-		}
 
-		const auto index = sv.find_first_of(delimiter);
+namespace sv {
 
-		if (index != std::string::npos)
-		{
-			const auto first_part = sv.substr(0, index);
-			const auto second_part = sv.substr(index + 1, sv.size());
+    std::string ltrim(std::string sv)
+    {
+        sv.erase(sv.begin(), std::find_if(sv.begin(), sv.end(), [](unsigned char ch) {
+                     return !std::isspace(ch);
+                 }));
+        return sv;
+    }
 
-			const auto t1 = std::atoi(std::string{ first_part }.c_str());
-			const auto t2 = std::atoi(std::string{ second_part }.c_str());
+    std::vector<std::string> split_args(std::string_view sv)
+    {
+        std::vector<std::string> out;
 
-			return std::vector{ t1, t2 };
-		}
+        auto it = sv.begin();
+        std::size_t offset = 0;
+        std::size_t spaces = 0;
 
-		return std::vector{ std::atoi(std::string{sv}.c_str()) };
-	}
-}
+        while (it != sv.end()) {
+            if (std::isspace(*it)) {
+                const auto idx = std::distance(sv.begin(), it);
+                const std::string to_insert = ltrim(std::string{sv.substr(std::distance(sv.begin(), sv.begin() + offset), idx - offset)});
+                out.push_back(to_insert);
+                offset = idx;
+                ++spaces;
+            }
+            else if (*it == '"') {
+                const auto idx = std::distance(sv.begin(), it);
+                const auto closing_dquote_pos = sv.find_last_of('"');
+
+                std::advance(it, closing_dquote_pos - std::distance(sv.begin(), it));
+
+                std::string_view to_insert = sv.substr(idx + 1, closing_dquote_pos);
+                to_insert.remove_suffix(1);
+                out.emplace_back(to_insert);
+            }
+            ++it;
+        }
+
+        if (out.size() != spaces + 1) {
+            const std::string to_insert = ltrim(std::string{sv.substr(std::distance(sv.begin(), sv.begin() + offset), sv.size() - offset)});
+            out.push_back(to_insert);
+        }
+
+        return out;
+    }
+}// namespace sv

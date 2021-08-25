@@ -2,16 +2,18 @@
 #define VM_HPP
 
 #include "parser.hpp"
+#include <any>
 
-namespace vm
-{
-	class Vm
-	{
-	public:
-		void run(const char* file_path);
-	private:
-		Stack stack;
-	};
-}
+namespace vm {
+    using VarMap = std::unordered_map<std::string, std::any>;
 
-#endif //VM_HPP
+    class Vm {
+    public:
+        [[noreturn]] void run(const char *file_path);
+
+    private:
+        VmState state;
+    };
+}// namespace vm
+
+#endif//VM_HPP

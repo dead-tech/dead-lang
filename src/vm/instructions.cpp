@@ -1,64 +1,117 @@
 #include "instructions.hpp"
 
-namespace vm::instructions
-{
+namespace vm::instructions {
 
-	void push_str(Stack& stack, const Instruction& instruction)
-	{
-		stack.push(Object{ .type = instruction.string_literal.value() });
-		stack.ip++;
-	}
+    void push_str(VmState &state, const Instruction &instruction)
+    {
+        if (instruction.args.empty()) {
+            throw VmError("Invalid arguments: `pushstr` instruction requires 1 argument of value string", instruction.line_number);
+        }
 
-	void push(Stack& stack, const Instruction& instruction)
-	{
-		if (instruction.args.size() > 0)
-		{
-			stack.push(Object{ .type = instruction.args[0] });
-		}
-		// ERROR
-		// Throw a custom exception
-		stack.ip++;
-	}
+        state.stack.push(Object{.value = instruction.args[0]});
+        state.stack.ip++;
+    }
 
-	void pop(Stack& stack, [[maybe_unused]] const Instruction& instruction)
-	{
-		stack.pop();
-		stack.ip++;
-	}
+    void push(VmState &state, const Instruction &instruction)
+    {
+        if (instruction.args.empty()) {
+            throw VmError("Invalid arguments: `push` instruction requires 1 argument of value int", instruction.line_number);
+        }
 
-	void swap(Stack& stack, [[maybe_unused]] const Instruction& instruction)
-	{
-		const Object a(std::move(stack.top()));
-		stack.pop();
-		const Object b(std::move(stack.top()));
-		stack.pop();
+        state.stack.push(Object{.value = std::atoi(instruction.args[0].c_str())});// NOLINT(cert-err34-c)
+        state.stack.ip++;
+    }
 
-		stack.push(a);
-		stack.push(b);
-		stack.ip++;
-	}
+    void pop(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
 
-	void print_str(Stack& stack, [[maybe_unused]] const Instruction& instruction)
-	{
-		std::cout << std::get<std::string_view>(stack.top().type) << '\n';
-		stack.ip++;
-	}
+        const std::size_t stack_size = state.stack.size();
 
-	void print(Stack& stack, [[maybe_unused]] const Instruction& instruction)
-	{
-		std::cout << std::get<int32_t>(stack.top().type) << '\n';
-		stack.ip++;
-	}
+        if (stack_size < 1) {
+            throw VmError("Stack underflow: You're trying to pop an element from the stack whose size is 0", instruction.line_number);
+        }
 
-	void nop(Stack& stack, [[maybe_unused]] const Instruction& instruction)
-	{
-		stack.ip++;
-	}
+        state.stack.pop();
+        state.stack.ip++;
+    }
 
-	void halt(Stack& stack, [[maybe_unused]] const Instruction& instruction)
-	{
-		stack.ip++;
-		std::cout << "Shutdown!" << '\n';
-		exit(0);
-	}
-}
+    void swap(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        const Object a(state.stack.top());
+        state.stack.pop();
+        const Object b(state.stack.top());
+        state.stack.pop();
+
+        state.stack.push(a);
+        state.stack.push(b);
+        state.stack.ip++;
+    }
+
+    void print_str(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        std::cout << std::get<std::string>(state.stack.top().value) << '\n';
+        state.stack.ip++;
+    }
+
+    void print(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        std::cout << std::get<int32_t>(state.stack.top().value) << '\n';
+        state.stack.ip++;
+    }
+
+    void set(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        if (instruction.args.size() < 2) {
+            throw VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value");
+        }
+
+        const auto is_number = [](const std::string &str) {
+            return std::ranges::all_of(str.begin(), str.end(), [](const char ch) { return std::isdigit(ch) != 0; });
+        };
+
+        if (is_number(instruction.args[1]) == 0) {
+            state.vars.emplace(instruction.args[0], instruction.args[1]);
+        }
+        else {
+            const int32_t to_insert = std::atoi(instruction.args[1].c_str());// NOLINT(cert-err34-c)
+            state.vars.emplace(instruction.args[0], to_insert);
+        }
+
+        state.stack.ip++;
+    }
+
+    void print_var(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        if (instruction.args.empty()) {
+            throw VmError("Invalid Arguments: `printvar` instruction requires 1 argument the variable name");
+        }
+
+        // Crash if no such key exists.
+        if (const auto it = state.vars.find(instruction.args[0]); it == state.vars.end()) {
+            throw VmError("Invalid Argument: unknown variable");
+        }
+
+        const auto value = state.vars[instruction.args[0]];
+
+        if (value.type() == typeid(int32_t)) {
+            std::cout << std::any_cast<int32_t>(value) << '\n';
+        }
+        else {
+            std::cout << std::any_cast<std::string>(value) << '\n';
+        }
+
+        state.stack.ip++;
+    }
+
+    void nop(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        state.stack.ip++;
+    }
+
+    void halt(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        state.stack.ip++;
+        std::cout << "\nProcess terminated with exit code 0!" << '\n';
+        exit(0);
+    }
+}// namespace vm::instructions

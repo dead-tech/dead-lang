@@ -1,14 +1,17 @@
 #ifndef SV_HPP
 #define SV_HPP
 
-#include <vector>
+#include <cctype>
+#include <iostream>
+#include <iterator>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
+#include <vector>
 
-namespace sv
-{
-	std::optional<std::vector<int32_t>> split_sv_to_int(std::string_view sv, const char delimiter = ',') noexcept;
-}
+namespace sv {
+    [[nodiscard]] std::vector<std::string> split_args(std::string_view sv);
+    [[nodiscard]] std::string ltrim(std::string sv);
+}// namespace sv
 
-#endif //SV_HPP
+#endif//SV_HPP

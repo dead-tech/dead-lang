@@ -1,41 +1,43 @@
 #ifndef STACK_HPP
 #define STACK_HPP
 
-#include <variant>
 #include <stack>
+#include <string>
 #include <string_view>
+#include <variant>
 
-namespace vm
-{
+namespace vm {
 
-	struct Object
-	{
-	private:
-		using value_type = std::variant<int32_t, uint32_t, std::string_view>;
+    struct Object {
+    private:
+        using value_type = std::variant<int32_t, uint32_t, std::string>;
 
-	public:
-		value_type type;
-	};
+    public:
+        value_type value;
+    };
 
-	struct Stack
-	{
-	public:
-		[[nodiscard]] Object& top() noexcept;
+    struct Stack {
+    public:
+        [[nodiscard]] Object &top() noexcept;
 
-		void pop() noexcept;
+        void pop() noexcept;
 
-		void push(const Object& obj);
+        void push(const Object &obj);
 
-		void push(Object&& obj);
+        void push(Object &&obj);
 
-	public:
-		Stack()
-			: ip{ 0 }, data{}
-		{}
+        [[nodiscard]] std::size_t size() const noexcept;
 
-		std::size_t ip;
-	private:
-		std::stack<Object> data;
-	};
-}
+    public:
+        Stack()
+            : ip{0}, data{}
+        {
+        }
+
+        std::size_t ip;
+
+    private:
+        std::stack<Object> data;
+    };
+}// namespace vm
 #endif// STACK_HPP
