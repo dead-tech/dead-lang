@@ -65,11 +65,11 @@ namespace vm::instructions {
             throw VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value");
         }
 
-        const auto is_number = [](const std::string &str) -> int {
-            return std::ranges::all_of(str.begin(), str.end(), [](const char ch) { return std::isdigit(ch) != 0; });
+        const auto is_number = [](const std::string &str) -> bool {
+            return str.find_first_not_of("0123456789") == std::string::npos;
         };
 
-        if (is_number(instruction.args[1]) == 0) {
+        if (!is_number(instruction.args[1])) {
             state.vars.emplace(instruction.args[0], instruction.args[1]);
         }
         else {
