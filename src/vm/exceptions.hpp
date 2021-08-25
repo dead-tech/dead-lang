@@ -2,6 +2,7 @@
 #define EXCEPTIONS_HPP
 
 #include <stdexcept>
+#include <string>
 
 namespace vm {
     class VmError : public std::runtime_error {
