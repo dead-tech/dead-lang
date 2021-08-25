@@ -14,7 +14,7 @@ Programming Language that compiles to the VM Bytecode.
 There's a stack virtual machine that has its own bytecode, that for now implements these instructions:
 
 * `pushstr <dquoted string>`
-* `push <number>
+* `push <number>`
 * `set <varname> <string||number>`
 * `printvar <varname>`
 * `printstr`
