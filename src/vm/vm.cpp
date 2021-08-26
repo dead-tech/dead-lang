@@ -12,12 +12,12 @@ namespace vm {
                 const auto found = instructions::map.contains(instruction.op_code);
 
                 if (!found) {
-                    throw UnknownOpCode(instruction.line_number, instruction.op_code);
+                    throw exceptions::UnknownOpCode(instruction.line_number, instruction.op_code);
                 }
 
                 instructions::map[instruction.op_code](state, instruction);
             }
-            catch (const VmError &err) {
+            catch (const exceptions::VmError &err) {
                 std::cout << "Errors occurred while running, execution stopped.\n\n"
                           << "In file " << canonical(path) << " on " << err.what() << '\n';
                 exit(1);

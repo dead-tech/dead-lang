@@ -1,4 +1,4 @@
 // Basic Hello World Program
-set message "Hello, world!"
-print message
+push "Hello, World!"
+print
 halt

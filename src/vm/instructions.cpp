@@ -5,7 +5,7 @@ namespace vm::instructions {
     void push(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.empty()) {
-            throw VmError("Invalid arguments: `push` instruction requires 1 argument of type int or string", instruction.line_number);
+            throw exceptions::VmError("Invalid arguments: `push` instruction requires 1 argument of type int or string", instruction.line_number);
         }
 
         if (!str::is_number(instruction.args[0])) {
@@ -24,7 +24,7 @@ namespace vm::instructions {
         const std::size_t stack_size = state.stack.size();
 
         if (stack_size < 1) {
-            throw StackUnderflow(instruction.line_number, stack_size);
+            throw exceptions::StackUnderflow(instruction.line_number, stack_size);
         }
 
         state.stack.pop();
@@ -33,13 +33,21 @@ namespace vm::instructions {
 
     void swap(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
+        const auto stack_size = state.stack.size();
+
+        if (stack_size < 2) {
+            throw exceptions::SwapError(instruction.line_number, stack_size);
+        }
+
         const Object a(state.stack.top());
         state.stack.pop();
+
         const Object b(state.stack.top());
         state.stack.pop();
 
         state.stack.push(a);
         state.stack.push(b);
+
         state.stack.ip++;
     }
 
@@ -49,6 +57,12 @@ namespace vm::instructions {
             impl::print_var(state, instruction);
             state.stack.ip++;
             return;
+        }
+
+        const auto stack_size = state.stack.size();
+
+        if (stack_size < 1) {
+            throw exceptions::StackUnderflow(instruction.line_number, stack_size);
         }
 
         const auto top = state.stack.top().value;
@@ -66,7 +80,7 @@ namespace vm::instructions {
     void set(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
         if (instruction.args.size() < 2) {
-            throw VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value", instruction.line_number);
+            throw exceptions::VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value", instruction.line_number);
         }
 
         const auto var_name = instruction.args[0];
@@ -75,13 +89,13 @@ namespace vm::instructions {
         if (!str::is_number(var_value)) {
             const auto [_, success] = state.vars.emplace(var_name, var_value);
             if (!success) {
-                throw VariableRedeclaration(instruction.line_number, var_name);
+                throw exceptions::VariableRedeclaration(instruction.line_number, var_name);
             }
         }
         else {
             const auto [_, success] = state.vars.emplace(var_name, std::atoi(var_value.c_str()));// NOLINT(cert-err34-c)
             if (!success) {
-                throw VariableRedeclaration(instruction.line_number, var_name);
+                throw exceptions::VariableRedeclaration(instruction.line_number, var_name);
             }
         }
 
@@ -106,7 +120,7 @@ namespace vm::instructions::impl {
         const auto it = state.vars.find(instruction.args[0]);
 
         if (it == state.vars.end()) {
-            throw UndeclaredVariable(instruction.line_number, instruction.args[0]);
+            throw exceptions::UndeclaredVariable(instruction.line_number, instruction.args[0]);
         }
 
         const auto value = it->second;

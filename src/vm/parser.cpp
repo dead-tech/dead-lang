@@ -8,6 +8,11 @@ namespace vm {
     {
         std::vector<std::string> code;
 
+        if (!exists(file_path)) {
+            std::cout << "Invalid path: " << file_path << '\n';
+            exit(1);
+        }
+
         std::ifstream file(file_path);
 
         std::string line;

@@ -1,6 +1,6 @@
 #include "exceptions.hpp"
 
-namespace vm {
+namespace vm::exceptions {
     VmError::VmError() : std::runtime_error("")
     {
     }
@@ -26,9 +26,20 @@ namespace vm {
         return error.what();
     }
 
+    SwapError::SwapError(std::size_t line_number, const std::size_t stack_size)
+    {
+        this->message = "Swap Error: In order to swap stack size must be >= 2 but stack size was " + std::to_string(stack_size);
+        error = VmError(this->message.c_str(), line_number);
+    }
+
+    const char *SwapError::what() const noexcept(true)
+    {
+        return error.what();
+    }
+
     StackUnderflow::StackUnderflow(const std::size_t line_number, const std::size_t stack_size)
     {
-        this->message = "Stack Underflow: Can't pop an element from the stack whose size is " + std::to_string(stack_size);
+        this->message = "Stack Underflow: Can't access/pop an element from the stack whose size is " + std::to_string(stack_size);
         error = VmError(this->message.c_str(), line_number);
     }
 
@@ -58,4 +69,4 @@ namespace vm {
     {
         return error.what();
     }
-}// namespace vm
+}// namespace vm::exceptions

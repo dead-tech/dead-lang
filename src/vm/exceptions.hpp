@@ -1,10 +1,11 @@
 #ifndef EXCEPTIONS_HPP
 #define EXCEPTIONS_HPP
 
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 
-namespace vm {
+namespace vm::exceptions {
     class VmError : public std::runtime_error {
     public:
         explicit VmError();
@@ -18,6 +19,15 @@ namespace vm {
     class UnknownOpCode : public VmError {
     public:
         UnknownOpCode(std::size_t line_number, std::string_view op_code);
+        [[nodiscard]] const char *what() const noexcept(true) final;
+
+    private:
+        VmError error;
+    };
+
+    class SwapError : public VmError {
+    public:
+        SwapError(std::size_t line_number, const std::size_t stack_size);
         [[nodiscard]] const char *what() const noexcept(true) final;
 
     private:
@@ -51,6 +61,6 @@ namespace vm {
         VmError error;
     };
 
-}// namespace vm
+}// namespace vm::exceptions
 
 #endif//EXCEPTIONS_HPP
