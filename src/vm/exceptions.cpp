@@ -5,7 +5,7 @@ namespace vm {
     {
     }
 
-    VmError::VmError(const char *message, std::size_t line_number) noexcept(true) : std::runtime_error(message)
+    VmError::VmError(const char *message, const std::size_t line_number) noexcept(true) : std::runtime_error(message)
     {
         this->message = "line " + std::to_string(line_number) + " -> " + message;
     }
@@ -15,7 +15,18 @@ namespace vm {
         return message.c_str();
     }
 
-    StackUnderflow::StackUnderflow(std::size_t line_number, std::size_t stack_size)
+    UnknownOpCode::UnknownOpCode(const std::size_t line_number, const std::string_view op_code)
+    {
+        this->message = "Unknown OpCode: No opcode named \"" + std::string{op_code} + "\" exists";
+        error = VmError(this->message.c_str(), line_number);
+    }
+
+    const char *UnknownOpCode::what() const noexcept(true)
+    {
+        return error.what();
+    }
+
+    StackUnderflow::StackUnderflow(const std::size_t line_number, const std::size_t stack_size)
     {
         this->message = "Stack Underflow: Can't pop an element from the stack whose size is " + std::to_string(stack_size);
         error = VmError(this->message.c_str(), line_number);
@@ -26,7 +37,7 @@ namespace vm {
         return error.what();
     }
 
-    VariableRedeclaration::VariableRedeclaration(std::size_t line_number, const std::string &var_name)
+    VariableRedeclaration::VariableRedeclaration(const std::size_t line_number, const std::string &var_name)
     {
         this->message = "Variable Redeclaration: Another variable named \"" + var_name + "\" already exists";
         error = VmError(this->message.c_str(), line_number);
@@ -37,7 +48,7 @@ namespace vm {
         return error.what();
     }
 
-    UndeclaredVariable::UndeclaredVariable(std::size_t line_number, const std::string &var_name)
+    UndeclaredVariable::UndeclaredVariable(const std::size_t line_number, const std::string &var_name)
     {
         this->message = "Unknown Variable: No variable named \"" + var_name + "\" exists";
         error = VmError(this->message.c_str(), line_number);

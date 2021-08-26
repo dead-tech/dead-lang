@@ -15,6 +15,15 @@ namespace vm {
         std::string message;
     };
 
+    class UnknownOpCode : public VmError {
+    public:
+        UnknownOpCode(std::size_t line_number, std::string_view op_code);
+        [[nodiscard]] const char *what() const noexcept(true) final;
+
+    private:
+        VmError error;
+    };
+
     class StackUnderflow : public VmError {
     public:
         StackUnderflow(std::size_t line_number, std::size_t stack_size);

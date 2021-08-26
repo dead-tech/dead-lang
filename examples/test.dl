@@ -1,3 +1,4 @@
-set x 88
-print x
+// Basic Hello World Program
+set message "Hello, world!"
+print message
 halt

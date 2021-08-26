@@ -9,7 +9,12 @@ namespace vm {
         while (true) {
             instructions::Instruction instruction = vm::parse_line(code[state.stack.ip]);
             try {
-                //Throw some error if no key exists
+                const auto found = instructions::map.contains(instruction.op_code);
+
+                if (!found) {
+                    throw UnknownOpCode(instruction.line_number, instruction.op_code);
+                }
+
                 instructions::map[instruction.op_code](state, instruction);
             }
             catch (const VmError &err) {

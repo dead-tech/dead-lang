@@ -69,17 +69,19 @@ namespace vm::instructions {
             throw VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value", instruction.line_number);
         }
 
-        if (!str::is_number(instruction.args[1])) {
-            const auto [_, success] = state.vars.emplace(instruction.args[0], instruction.args[1]);
+        const auto var_name = instruction.args[0];
+        const auto var_value = instruction.args[1];
+
+        if (!str::is_number(var_value)) {
+            const auto [_, success] = state.vars.emplace(var_name, var_value);
             if (!success) {
-                throw VariableRedeclaration(instruction.line_number, instruction.args[0]);
+                throw VariableRedeclaration(instruction.line_number, var_name);
             }
         }
         else {
-            const int32_t to_insert = std::atoi(instruction.args[1].c_str());// NOLINT(cert-err34-c)
-            const auto [_, success] = state.vars.emplace(instruction.args[0], to_insert);
+            const auto [_, success] = state.vars.emplace(var_name, std::atoi(var_value.c_str()));// NOLINT(cert-err34-c)
             if (!success) {
-                throw VariableRedeclaration(instruction.line_number, instruction.args[0]);
+                throw VariableRedeclaration(instruction.line_number, var_name);
             }
         }
 
@@ -102,16 +104,18 @@ namespace vm::instructions::impl {
     void print_var(VmState &state, const Instruction &instruction)
     {
         const auto it = state.vars.find(instruction.args[0]);
-        
+
         if (it == state.vars.end()) {
             throw UndeclaredVariable(instruction.line_number, instruction.args[0]);
         }
 
-        if (it->second.type() == typeid(int32_t)) {
-            std::cout << std::any_cast<int32_t>(it->second) << '\n';
+        const auto value = it->second;
+
+        if (typeid(value) == typeid(int32_t)) {
+            std::cout << std::any_cast<int32_t>(value) << '\n';
         }
         else {
-            std::cout << std::any_cast<std::string>(it->second) << '\n';
+            std::cout << std::any_cast<std::string>(value) << '\n';
         }
     }
 }// namespace vm::instructions::impl

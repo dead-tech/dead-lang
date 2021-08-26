@@ -20,7 +20,7 @@ namespace vm {
 }// namespace vm
 
 namespace vm::instructions {
-    using OpCode = std::string_view;
+    using OpCode = std::string;
     using Arguments = std::vector<std::string>;
 
     struct Instruction {
