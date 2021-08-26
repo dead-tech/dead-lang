@@ -2,14 +2,6 @@
 
 namespace sv {
 
-    std::string ltrim(std::string sv)
-    {
-        sv.erase(sv.begin(), std::find_if(sv.begin(), sv.end(), [](unsigned char ch) {
-                     return !std::isspace(ch);
-                 }));
-        return sv;
-    }
-
     std::vector<std::string> split_args(std::string_view sv)
     {
         std::vector<std::string> out;
@@ -21,7 +13,7 @@ namespace sv {
         while (it != sv.end()) {
             if (std::isspace(*it)) {
                 const auto idx = std::distance(sv.begin(), it);
-                const std::string to_insert = ltrim(std::string{sv.substr(std::distance(sv.begin(), sv.begin() + offset), idx - offset)});
+                const std::string to_insert = str::ltrim(std::string{sv.substr(std::distance(sv.begin(), sv.begin() + offset), idx - offset)});
                 out.push_back(to_insert);
                 offset = idx;
                 ++spaces;
@@ -40,7 +32,7 @@ namespace sv {
         }
 
         if (out.size() != spaces + 1) {
-            const std::string to_insert = ltrim(std::string{sv.substr(std::distance(sv.begin(), sv.begin() + offset), sv.size() - offset)});
+            const std::string to_insert = str::ltrim(std::string{sv.substr(std::distance(sv.begin(), sv.begin() + offset), sv.size() - offset)});
             out.push_back(to_insert);
         }
 

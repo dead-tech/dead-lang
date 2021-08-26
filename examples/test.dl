@@ -1,5 +1,7 @@
-// Basic program to print hello world using a variable
-set message "Hello, world!"
-printvar message
-nop
+push 1
+print
+push "test"
+print
+set x 77
+print x
 halt

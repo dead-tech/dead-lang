@@ -2,23 +2,19 @@
 
 namespace vm::instructions {
 
-    void push_str(VmState &state, const Instruction &instruction)
-    {
-        if (instruction.args.empty()) {
-            throw VmError("Invalid arguments: `pushstr` instruction requires 1 argument of value string", instruction.line_number);
-        }
-
-        state.stack.push(Object{.value = instruction.args[0]});
-        state.stack.ip++;
-    }
-
     void push(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.empty()) {
-            throw VmError("Invalid arguments: `push` instruction requires 1 argument of value int", instruction.line_number);
+            throw VmError("Invalid arguments: `push` instruction requires 1 argument of type int or string", instruction.line_number);
         }
 
-        state.stack.push(Object{.value = std::atoi(instruction.args[0].c_str())});// NOLINT(cert-err34-c)
+        if (!str::is_number(instruction.args[0])) {
+            state.stack.push(Object{.value = instruction.args[0]});
+        }
+        else {
+            state.stack.push(Object{.value = std::atoi(instruction.args[0].c_str())});// NOLINT(cert-err34-c)
+        }
+
         state.stack.ip++;
     }
 
@@ -47,15 +43,23 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void print_str(VmState &state, [[maybe_unused]] const Instruction &instruction)
-    {
-        std::cout << std::get<std::string>(state.stack.top().value) << '\n';
-        state.stack.ip++;
-    }
-
     void print(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
-        std::cout << std::get<int32_t>(state.stack.top().value) << '\n';
+        if (!instruction.args.empty()) {
+            impl::print_var(state, instruction);
+            state.stack.ip++;
+            return;
+        }
+
+        const auto top = state.stack.top().value;
+
+        if (std::holds_alternative<int32_t>(top)) {
+            std::cout << std::get<int32_t>(top) << '\n';
+        }
+        else {
+            std::cout << std::get<std::string>(top) << '\n';
+        }
+
         state.stack.ip++;
     }
 
@@ -65,11 +69,7 @@ namespace vm::instructions {
             throw VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value", instruction.line_number);
         }
 
-        const auto is_number = [](const std::string &str) -> bool {
-            return str.find_first_not_of("0123456789") == std::string::npos;
-        };
-
-        if (!is_number(instruction.args[1])) {
+        if (!str::is_number(instruction.args[1])) {
             const auto [_, success] = state.vars.emplace(instruction.args[0], instruction.args[1]);
             if (!success) {
                 throw VariableRedeclaration(instruction.line_number, instruction.args[0]);
@@ -86,13 +86,21 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void print_var(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void nop(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
-        if (instruction.args.empty()) {
-            throw VmError("Invalid Arguments: `printvar` instruction requires 1 argument the variable name", instruction.line_number);
-        }
+        state.stack.ip++;
+    }
 
-        // Crash if no such key exists.
+    void halt(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        state.stack.ip++;
+        exit(0);
+    }
+}// namespace vm::instructions
+
+namespace vm::instructions::impl {
+    void print_var(VmState &state, const Instruction &instruction)
+    {
         if (const auto it = state.vars.find(instruction.args[0]); it == state.vars.end()) {
             throw UndeclaredVariable(instruction.line_number, instruction.args[0]);
         }
@@ -105,18 +113,5 @@ namespace vm::instructions {
         else {
             std::cout << std::any_cast<std::string>(value) << '\n';
         }
-
-        state.stack.ip++;
     }
-
-    void nop(VmState &state, [[maybe_unused]] const Instruction &instruction)
-    {
-        state.stack.ip++;
-    }
-
-    void halt(VmState &state, [[maybe_unused]] const Instruction &instruction)
-    {
-        state.stack.ip++;
-        exit(0);
-    }
-}// namespace vm::instructions
+}// namespace vm::instructions::impl
