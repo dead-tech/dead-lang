@@ -12,6 +12,7 @@
 namespace sv {
     [[nodiscard]] std::vector<std::string> split_args(std::string_view sv);
     [[nodiscard]] std::string ltrim(std::string sv);
+
 }// namespace sv
 
 #endif//SV_HPP

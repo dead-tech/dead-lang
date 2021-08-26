@@ -4,7 +4,7 @@ namespace vm {
 
     static inline size_t line_number = 0;
 
-    std::vector<std::string> read_file(const char *file_path)
+    std::vector<std::string> read_file(const std::filesystem::path &file_path)
     {
         std::vector<std::string> code;
 
@@ -21,7 +21,11 @@ namespace vm {
     instructions::Instruction parse_line(const std::string_view line) noexcept
     {
         const auto split_line = sv::split_args(line);
-        const auto op_code = split_line[0];
+        auto op_code = split_line[0];
+
+        if (line.starts_with("//")) {
+            op_code = "nop";
+        }
 
         instructions::Arguments args;
 

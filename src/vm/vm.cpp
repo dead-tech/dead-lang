@@ -4,7 +4,7 @@ namespace vm {
     [[noreturn]] void Vm::run(const char *file_path)
     {
         const auto path = std::filesystem::path(file_path);
-        std::vector<std::string> code = read_file(path.c_str());
+        std::vector<std::string> code = read_file(path);
 
         while (true) {
             instructions::Instruction instruction = vm::parse_line(code[state.stack.ip]);
