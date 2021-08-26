@@ -28,7 +28,7 @@ namespace vm::instructions {
         const std::size_t stack_size = state.stack.size();
 
         if (stack_size < 1) {
-            throw VmError("Stack underflow: You're trying to pop an element from the stack whose size is 0", instruction.line_number);
+            throw StackUnderflow(instruction.line_number, stack_size);
         }
 
         state.stack.pop();
@@ -62,7 +62,7 @@ namespace vm::instructions {
     void set(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
         if (instruction.args.size() < 2) {
-            throw VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value");
+            throw VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value", instruction.line_number);
         }
 
         const auto is_number = [](const std::string &str) -> bool {
@@ -70,11 +70,17 @@ namespace vm::instructions {
         };
 
         if (!is_number(instruction.args[1])) {
-            state.vars.emplace(instruction.args[0], instruction.args[1]);
+            const auto [_, success] = state.vars.emplace(instruction.args[0], instruction.args[1]);
+            if (!success) {
+                throw VariableRedeclaration(instruction.line_number, instruction.args[0]);
+            }
         }
         else {
             const int32_t to_insert = std::atoi(instruction.args[1].c_str());// NOLINT(cert-err34-c)
-            state.vars.emplace(instruction.args[0], to_insert);
+            const auto [_, success] = state.vars.emplace(instruction.args[0], to_insert);
+            if (!success) {
+                throw VariableRedeclaration(instruction.line_number, instruction.args[0]);
+            }
         }
 
         state.stack.ip++;
@@ -83,12 +89,12 @@ namespace vm::instructions {
     void print_var(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
         if (instruction.args.empty()) {
-            throw VmError("Invalid Arguments: `printvar` instruction requires 1 argument the variable name");
+            throw VmError("Invalid Arguments: `printvar` instruction requires 1 argument the variable name", instruction.line_number);
         }
 
         // Crash if no such key exists.
         if (const auto it = state.vars.find(instruction.args[0]); it == state.vars.end()) {
-            throw VmError("Invalid Argument: unknown variable");
+            throw UndeclaredVariable(instruction.line_number, instruction.args[0]);
         }
 
         const auto value = state.vars[instruction.args[0]];

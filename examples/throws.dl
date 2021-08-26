@@ -1,3 +1,2 @@
-pop
-push
+printvar x
 halt

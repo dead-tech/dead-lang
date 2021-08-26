@@ -3,6 +3,7 @@
 
 #include "parser.hpp"
 #include <any>
+#include <filesystem>
 
 namespace vm {
     using VarMap = std::unordered_map<std::string, std::any>;
