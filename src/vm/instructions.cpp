@@ -101,17 +101,17 @@ namespace vm::instructions {
 namespace vm::instructions::impl {
     void print_var(VmState &state, const Instruction &instruction)
     {
-        if (const auto it = state.vars.find(instruction.args[0]); it == state.vars.end()) {
+        const auto it = state.vars.find(instruction.args[0]);
+        
+        if (it == state.vars.end()) {
             throw UndeclaredVariable(instruction.line_number, instruction.args[0]);
         }
 
-        const auto value = state.vars[instruction.args[0]];
-
-        if (value.type() == typeid(int32_t)) {
-            std::cout << std::any_cast<int32_t>(value) << '\n';
+        if (it->second.type() == typeid(int32_t)) {
+            std::cout << std::any_cast<int32_t>(it->second) << '\n';
         }
         else {
-            std::cout << std::any_cast<std::string>(value) << '\n';
+            std::cout << std::any_cast<std::string>(it->second) << '\n';
         }
     }
 }// namespace vm::instructions::impl

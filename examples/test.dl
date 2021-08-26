@@ -1,7 +1,3 @@
-push 1
-print
-push "test"
-print
-set x 77
+set x 88
 print x
 halt
