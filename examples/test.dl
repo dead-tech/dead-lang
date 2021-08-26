@@ -1,14 +1,5 @@
-set string1 "Dopo "
-set num "2131231232 "
-set string2 "volte dovrebbe funzionare!!"
-pushstr "Ciao Antonio!"
-pushstr "Funzionaaaah!!!"
-swap
-printstr
-printvar string1
-printvar num
-printvar string2
-pop
-printstr
+// Basic program to print hello world using a variable
+set message "Hello, world!"
+printvar message
 nop
 halt

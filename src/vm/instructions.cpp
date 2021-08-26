@@ -117,7 +117,6 @@ namespace vm::instructions {
     void halt(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
         state.stack.ip++;
-        std::cout << "\nProcess terminated with exit code 0!" << '\n';
         exit(0);
     }
 }// namespace vm::instructions
