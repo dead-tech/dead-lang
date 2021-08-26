@@ -32,21 +32,17 @@ namespace vm::instructions {
     using FnPtr = void (*)(VmState &, const Instruction &);
     using namespace std::literals;
 
-    void push_str(VmState &state, const Instruction &instruction);
-
     void push(VmState &state, const Instruction &instruction);
 
     void pop(VmState &state, const Instruction &instruction);
 
     void swap(VmState &state, const Instruction &instruction);
 
-    void print_str(VmState &state, const Instruction &instruction);
-
     void print(VmState &state, const Instruction &instruction);
 
     void set(VmState &state, const Instruction &instruction);
 
-    void print_var(VmState &state, [[maybe_unused]] const Instruction &instruction);
+    // Move this
 
     void nop(VmState &state, const Instruction &instruction);
 
@@ -54,17 +50,18 @@ namespace vm::instructions {
 
     inline std::unordered_map<std::string_view, FnPtr> map =
             {
-                    {"pushstr"sv, &push_str},
                     {"push"sv, &push},
                     {"pop"sv, &pop},
                     {"swap"sv, &swap},
-                    {"printstr"sv, &print_str},
                     {"print"sv, &print},
                     {"set"sv, &set},
-                    {"printvar"sv, &print_var},
                     {"nop"sv, &nop},
                     {"halt"sv, &halt},
     };
 }// namespace vm::instructions
+
+namespace vm::instructions::impl {
+    void print_var(VmState &state, [[maybe_unused]] const Instruction &instruction);
+}
 
 #endif// INSTRUCTIONS_HPP
