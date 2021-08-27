@@ -6,6 +6,7 @@
 #include "stack.hpp"
 #include <algorithm>
 #include <any>
+#include <array>
 #include <iostream>
 #include <optional>
 #include <unordered_map>
@@ -14,10 +15,21 @@
 namespace vm {
     using VarMap = std::unordered_map<std::string, std::any>;
     using Label = std::vector<std::string>;
+
+    struct CallSite {
+        std::string call_site_label;
+        std::size_t offset_from_start;
+    };
+
     struct VmState {
         Stack stack;
         VarMap vars;
+
         std::vector<Label> labels;
+        std::string label_to_run = ".main";
+
+        std::array<CallSite, 16> call_stack;
+        std::size_t call_stack_ptr = 0;
 
         [[nodiscard]] std::optional<Label> get_label(const std::string &label_name) const noexcept;
     };
@@ -46,7 +58,9 @@ namespace vm::instructions {
 
     void set(VmState &state, const Instruction &instruction);
 
-    // Move this
+    void jump(VmState &state, const Instruction &instruction);
+
+    void ret(VmState &state, const Instruction &instruction);
 
     void nop(VmState &state, const Instruction &instruction);
 
@@ -59,6 +73,8 @@ namespace vm::instructions {
                     {"swap"sv, &swap},
                     {"print"sv, &print},
                     {"set"sv, &set},
+                    {"jump"sv, &jump},
+                    {"ret"sv, &ret},
                     {"nop"sv, &nop},
                     {"halt"sv, &halt},
     };

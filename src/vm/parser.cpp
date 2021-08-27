@@ -27,6 +27,7 @@ namespace vm {
     {
         std::vector<Label> out;
 
+        // Throw if same label twice.
         for (auto it = code.begin(); it != code.end(); ++it) {
             if (it->starts_with(".") && it->ends_with("{")) {
                 Label label;
@@ -35,6 +36,13 @@ namespace vm {
                     ++it;
                 }
                 label.push_back(str::ltrim(*it));
+
+                for (const auto &lb : out) {
+                    if (lb[0] == label[0]) {
+                        throw vm::exceptions::LabelRedeclaration(lb[0].substr(0, lb[0].size() - 2));
+                    }
+                }
+
                 out.push_back(label);
             }
         }

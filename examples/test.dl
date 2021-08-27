@@ -1,6 +1,16 @@
-// Basic Hello World Program
+// Label Testing Program
+
 .main {
-    push "Hello, World!"
+    push "Main -> Testing labels"
+    print
+    jump test
+    push "Main -> This is printed after we returned from the label"
     print
     halt
+}
+
+.test {
+    push "Label Test -> This is printed from the label"
+    print
+    ret
 }

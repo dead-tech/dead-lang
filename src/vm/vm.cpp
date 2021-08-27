@@ -10,23 +10,21 @@ namespace vm {
 
         while (true) {
 
-            const auto main = state.get_label(".main");
+            const auto label = state.get_label(state.label_to_run);
 
-            if (!main.has_value()) {
-                throw exceptions::VmError("VmError: .main label not found", 0);
+            if (!label.has_value()) {
+                throw exceptions::VmError("(Line number is not correct) VmError: .main label not found", 0);
             }
 
-            for (const std::string &line : main.value()) {
-                instructions::Instruction instruction = vm::parse_line(line);
+            instructions::Instruction instruction = vm::parse_line(label.value()[state.stack.ip]);
 
-                const auto found = instructions::map.contains(instruction.op_code);
+            const auto found = instructions::map.contains(instruction.op_code);
 
-                if (!found) {
-                    throw exceptions::UnknownOpCode(instruction.line_number, instruction.op_code);
-                }
-
-                instructions::map[instruction.op_code](state, instruction);
+            if (!found) {
+                throw exceptions::UnknownOpCode(instruction.line_number, instruction.op_code);
             }
+
+            instructions::map[instruction.op_code](state, instruction);
         }
     }
 }// namespace vm

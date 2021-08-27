@@ -1,2 +1,14 @@
-printvar x
-halt
+.main {
+    jump test
+    halt
+}
+
+.test {
+    push 1
+    print
+    ret
+}
+
+.test {
+    ret
+}

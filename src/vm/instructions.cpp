@@ -116,6 +116,45 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
+    void jump(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        if (instruction.args.empty()) {
+            throw exceptions::VmError("Invalid Arguments: `jump` instruction requires 1 argument the label name", instruction.line_number);
+        }
+
+        const auto label = state.get_label("." + instruction.args[0]);
+
+        if (!label.has_value()) {
+            throw exceptions::UndeclaredLabel(instruction.line_number, instruction.args[0]);
+        }
+
+
+        if (label->rbegin()[1] != "ret") {
+            throw exceptions::NonReturningLabel(instruction.line_number, instruction.args[0]);
+        }
+
+        state.call_stack[++state.call_stack_ptr] = CallSite{.call_site_label = state.label_to_run, .offset_from_start = state.stack.ip};
+
+        state.label_to_run = "." + instruction.args[0];
+        state.stack.ip = 0;
+
+        state.stack.ip++;
+    }
+
+    void ret(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        if (state.call_stack_ptr <= 0) {
+            throw exceptions::CallStackUnderflow(instruction.line_number, state.call_stack_ptr);
+        }
+
+        const auto call_site = state.call_stack[state.call_stack_ptr--];
+        state.label_to_run = call_site.call_site_label;
+        state.stack.ip = call_site.offset_from_start;
+
+        state.stack.ip++;
+    }
+
+
     void nop(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
         state.stack.ip++;

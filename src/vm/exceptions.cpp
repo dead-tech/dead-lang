@@ -69,4 +69,48 @@ namespace vm::exceptions {
     {
         return error.what();
     }
+
+    UndeclaredLabel::UndeclaredLabel(std::size_t line_number, const std::string &label_name)
+    {
+        this->message = "Unknown Label: No label named \"" + label_name + "\" exists";
+        error = VmError(this->message.c_str(), line_number);
+    }
+
+    const char *UndeclaredLabel::what() const noexcept(true)
+    {
+        return error.what();
+    }
+
+    NonReturningLabel::NonReturningLabel(std::size_t line_number, const std::string &label_name)
+    {
+        this->message = "Non-Returning Label: No `ret` instruction in label \"" + label_name + "\" was found";
+        error = VmError(this->message.c_str(), line_number);
+    }
+
+    const char *NonReturningLabel::what() const noexcept(true)
+    {
+        return error.what();
+    }
+
+    LabelRedeclaration::LabelRedeclaration(const std::string &label_name)
+    {
+        this->message = "(Line number is not correct) Label Redeclaration: Another label named \"" + label_name + "\" already exists";
+        error = VmError(this->message.c_str(), 0);
+    }
+
+    const char *LabelRedeclaration::what() const noexcept(true)
+    {
+        return error.what();
+    }
+
+    CallStackUnderflow::CallStackUnderflow(std::size_t line_number, std::size_t stack_size)
+    {
+        this->message = "CallStack Underflow: Cant' return from function because call stack size is " + std::to_string(stack_size);
+        error = VmError(this->message.c_str(), line_number);
+    }
+
+    const char *CallStackUnderflow::what() const noexcept(true)
+    {
+        return error.what();
+    }
 }// namespace vm::exceptions

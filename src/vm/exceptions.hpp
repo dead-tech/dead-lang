@@ -61,6 +61,42 @@ namespace vm::exceptions {
         VmError error;
     };
 
+    class LabelRedeclaration : public VmError {
+    public:
+        explicit LabelRedeclaration(const std::string &label_name);
+        [[nodiscard]] const char *what() const noexcept(true) final;
+
+    private:
+        VmError error;
+    };
+
+    class UndeclaredLabel : public VmError {
+    public:
+        UndeclaredLabel(std::size_t line_number, const std::string &label_name);
+        [[nodiscard]] const char *what() const noexcept(true) final;
+
+    private:
+        VmError error;
+    };
+
+    class NonReturningLabel : public VmError {
+    public:
+        NonReturningLabel(std::size_t line_number, const std::string &label_name);
+        [[nodiscard]] const char *what() const noexcept(true) final;
+
+    private:
+        VmError error;
+    };
+
+    class CallStackUnderflow : public VmError {
+    public:
+        CallStackUnderflow(std::size_t line_number, std::size_t stack_size);
+        [[nodiscard]] const char *what() const noexcept(true) final;
+
+    private:
+        VmError error;
+    };
+
 }// namespace vm::exceptions
 
 #endif//EXCEPTIONS_HPP

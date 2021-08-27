@@ -19,6 +19,8 @@ There's a stack virtual machine that has its own bytecode, that for now implemen
 * `push <number||dquoted string>`
 * `print <varname?> (optional, if not specified prints the element at the top of the stack)`
 * `set <varname> <string||number>`
+* `jump <labelname>`
+* `ret`
 * `pop`
 * `swap`
 * `nop`
