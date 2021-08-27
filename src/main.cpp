@@ -13,5 +13,13 @@ int main(int argc, char **argv)
     }
 
     vm::Vm vm;
-    vm.run(argv[1]);
+    
+    try {
+        vm.run(argv[1]);
+    }
+    catch (const vm::exceptions::VmError &err) {
+        std::cout << "Errors occurred while running, execution stopped.\n\n"
+                  << "In file " << canonical(std::filesystem::path{argv[1]}) << " on " << err.what() << '\n';
+        exit(1);
+    }
 }

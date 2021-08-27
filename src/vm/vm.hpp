@@ -6,6 +6,7 @@
 #include <filesystem>
 
 namespace vm {
+    using Label = std::vector<std::string>;
     using VarMap = std::unordered_map<std::string, std::any>;
 
     class Vm {

@@ -13,9 +13,13 @@
 
 namespace vm {
     using VarMap = std::unordered_map<std::string, std::any>;
+    using Label = std::vector<std::string>;
     struct VmState {
         Stack stack;
         VarMap vars;
+        std::vector<Label> labels;
+
+        [[nodiscard]] std::optional<Label> get_label(const std::string &label_name) const noexcept;
     };
 }// namespace vm
 

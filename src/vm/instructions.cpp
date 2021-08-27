@@ -1,5 +1,19 @@
 #include "instructions.hpp"
 
+namespace vm {
+    std::optional<Label> VmState::get_label(const std::string &label_name) const noexcept
+    {
+        for (const auto &label : labels) {
+            if (label[0].starts_with(label_name)) {
+                return label;
+            }
+        }
+        return std::nullopt;
+    }
+}// namespace vm
+
+// ------------------------------------------------ INSTRUCTIONS ------------------------------------------------ //
+
 namespace vm::instructions {
 
     void push(VmState &state, const Instruction &instruction)

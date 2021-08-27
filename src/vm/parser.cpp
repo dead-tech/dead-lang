@@ -23,12 +23,34 @@ namespace vm {
         return code;
     }
 
+    std::vector<Label> parse_labels(const std::vector<std::string> &code)
+    {
+        std::vector<Label> out;
+
+        for (auto it = code.begin(); it != code.end(); ++it) {
+            if (it->starts_with(".") && it->ends_with("{")) {
+                Label label;
+                while (*it != "}") {
+                    label.push_back(str::ltrim(*it));
+                    ++it;
+                }
+                label.push_back(str::ltrim(*it));
+                out.push_back(label);
+            }
+        }
+
+        return out;
+    }
+
     instructions::Instruction parse_line(const std::string_view line) noexcept
     {
         const auto split_line = sv::split_args(line);
         auto op_code = split_line[0];
 
-        if (line.starts_with("//")) {
+        // Skips line if it is either a comment, a label declaration or the end of a label
+        if (line.starts_with("//") ||
+            line.starts_with(".") ||
+            line == "}") {
             op_code = "nop";
         }
 

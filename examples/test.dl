@@ -1,4 +1,6 @@
 // Basic Hello World Program
-push "Hello, World!"
-print
-halt
+.main {
+    push "Hello, World!"
+    print
+    halt
+}

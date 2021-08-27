@@ -14,6 +14,7 @@ namespace sv {
             if (std::isspace(*it)) {
                 const auto idx = std::distance(sv.begin(), it);
                 const std::string to_insert = str::ltrim(std::string{sv.substr(std::distance(sv.begin(), sv.begin() + offset), idx - offset)});
+
                 out.push_back(to_insert);
                 offset = idx;
                 ++spaces;

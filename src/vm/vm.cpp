@@ -6,9 +6,19 @@ namespace vm {
         const auto path = std::filesystem::path(file_path);
         std::vector<std::string> code = read_file(path);
 
+        state.labels = vm::parse_labels(code);
+
         while (true) {
-            instructions::Instruction instruction = vm::parse_line(code[state.stack.ip]);
-            try {
+
+            const auto main = state.get_label(".main");
+
+            if (!main.has_value()) {
+                throw exceptions::VmError("VmError: .main label not found", 0);
+            }
+
+            for (const std::string &line : main.value()) {
+                instructions::Instruction instruction = vm::parse_line(line);
+
                 const auto found = instructions::map.contains(instruction.op_code);
 
                 if (!found) {
@@ -16,11 +26,6 @@ namespace vm {
                 }
 
                 instructions::map[instruction.op_code](state, instruction);
-            }
-            catch (const exceptions::VmError &err) {
-                std::cout << "Errors occurred while running, execution stopped.\n\n"
-                          << "In file " << canonical(path) << " on " << err.what() << '\n';
-                exit(1);
             }
         }
     }
