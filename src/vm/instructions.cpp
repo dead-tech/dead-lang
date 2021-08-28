@@ -55,7 +55,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void pop(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void pop(VmState &state, const Instruction &instruction)
     {
 
         const std::size_t stack_size = state.stack.size();
@@ -68,7 +68,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void swap(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void swap(VmState &state, const Instruction &instruction)
     {
         const auto stack_size = state.stack.size();
 
@@ -88,7 +88,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void print(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void print(VmState &state, const Instruction &instruction)
     {
         if (!instruction.args.empty()) {
             impl::print_var(state, instruction);
@@ -114,7 +114,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void set(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void set(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.size() < 2) {
             throw exceptions::VmError("Invalid Arguments: `set` instruction requires 2 arguments the variable name and its actual value", instruction.line_number);
@@ -139,54 +139,35 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void jump(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void jump(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.empty()) {
             throw exceptions::VmError("Invalid Arguments: `jump` instruction requires 1 argument the label name", instruction.line_number);
         }
 
-        const auto label = state.get_label("." + instruction.args[0], instruction.line_number);
-
-        if (label.rbegin()[1] != "ret") {
-            throw exceptions::NonReturningLabel(instruction.line_number, instruction.args[0]);
-        }
-
-        state.call_stack[++state.call_stack_ptr] = CallSite{.call_site_label = state.label_to_run, .offset_from_start = state.stack.ip};
-
-        state.label_to_run = "." + instruction.args[0];
-        state.stack.ip = 0;
+        impl::unconditional_jump(state, instruction.args[0], instruction.line_number);
 
         state.stack.ip++;
     }
 
-    void jump_if_not_equal(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void jump_if_not_equal(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.size() < 3) {
             throw exceptions::VmError("Invalid Arguments: `jumpne` instruction requires 3 argument the variable name, what to compare the variable against and the label to jump to", instruction.line_number);
         }
 
-        const std::string label_name = instruction.args[0];
-
-        const Label label = state.get_label("." + label_name, instruction.line_number);
         const auto [_, value] = state.get_variable<int32_t>(instruction.args[1], instruction.line_number);
-
-        if (label.rbegin()[1] != "ret") {
-            throw exceptions::NonReturningLabel(instruction.line_number, label_name);
-        }
 
         if (value != std::atoi(instruction.args[2].c_str()))// NOLINT(cert-err34-c)
         {
-            state.call_stack[++state.call_stack_ptr] = CallSite{.call_site_label = state.label_to_run, .offset_from_start = state.stack.ip};
-
-            state.label_to_run = "." + label_name;
-            state.stack.ip = 0;
+            impl::unconditional_jump(state, instruction.args[0], instruction.line_number);
         }
         else {
             state.stack.ip++;
         }
     }
 
-    void ret(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void ret(VmState &state, const Instruction &instruction)
     {
         if (state.call_stack_ptr <= 0) {
             throw exceptions::CallStackUnderflow(instruction.line_number, state.call_stack_ptr);
@@ -199,7 +180,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void dec(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void dec(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.empty()) {
             throw exceptions::VmError("Invalid Arguments: `dec` instruction requires 1 argument the variable name", instruction.line_number);
@@ -210,7 +191,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void inc(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void inc(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.empty()) {
             throw exceptions::VmError("Invalid Arguments: `inc` instruction requires 1 argument the variable name", instruction.line_number);
@@ -221,7 +202,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void add(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void add(VmState &state, const Instruction &instruction)
     {
 
         if (instruction.args.size() < 2) {
@@ -246,7 +227,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void concat(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void concat(VmState &state, const Instruction &instruction)
     {
 
         if (instruction.args.size() < 2) {
@@ -271,7 +252,7 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
-    void mov(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    void mov(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.size() < 2) {
             throw exceptions::VmError("Invalid Arguments: `mov` instruction requires 2 arguments the source variable and the destination variable", instruction.line_number);
@@ -312,8 +293,26 @@ namespace vm::instructions::impl {
         }
     }
 
+    void unconditional_jump(VmState &state, const std::string &label_name, const std::size_t line_number)
+    {
+        const auto label = state.get_label("." + label_name, line_number);
+
+        if (label.rbegin()[1] != "ret") {
+            throw exceptions::NonReturningLabel(line_number, label_name);
+        }
+
+        if (state.call_stack_ptr == state.call_stack.max_size() - 1) {
+            throw exceptions::CallStackOverflow(line_number, state.call_stack_ptr);
+        }
+
+        state.call_stack[++state.call_stack_ptr] = CallSite{.call_site_label = state.label_to_run, .offset_from_start = state.stack.ip};
+
+        state.label_to_run = "." + label_name;
+        state.stack.ip = 0;
+    }
+
     template<typename Type, typename BinaryOp>
-    void binary_op(VmState &state, [[maybe_unused]] const Instruction &instruction, const std::size_t output, BinaryOp binary_operation)
+    void binary_op(VmState &state, const Instruction &instruction, const std::size_t output, BinaryOp binary_operation)
     {
         const auto [_it1, left] = state.get_variable<Type>(instruction.args[0], instruction.line_number);
         const auto [_it2, right] = state.get_variable<Type>(instruction.args[1], instruction.line_number);
@@ -322,7 +321,7 @@ namespace vm::instructions::impl {
     }
 
     template<typename UnaryOp>
-    void unary_op(VmState &state, [[maybe_unused]] const Instruction &instruction, UnaryOp unary_op)
+    void unary_op(VmState &state, const Instruction &instruction, UnaryOp unary_op)
     {
         auto [it, value] = state.get_variable<int32_t>(instruction.args[0], instruction.line_number);
 

@@ -97,6 +97,15 @@ namespace vm::exceptions {
         VmError error;
     };
 
+    class CallStackOverflow : public VmError {
+    public:
+        CallStackOverflow(std::size_t line_number, std::size_t stack_size);
+        [[nodiscard]] const char *what() const noexcept(true) final;
+
+    private:
+        VmError error;
+    };
+
 }// namespace vm::exceptions
 
 #endif//EXCEPTIONS_HPP
