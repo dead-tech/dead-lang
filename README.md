@@ -23,9 +23,11 @@ There's a stack virtual machine that has its own bytecode, that for now implemen
 * `jumpne <varname> <comparator> <labelname>`
 * `dec <varname>`
 * `inc <varname>`
-* `add <varname1> <varname2>` == `var2 += var1` or `add <varname1> <varname2> <varname3>` == `var3 = var 1 + var 2` (for integers)
-* `concat <varname1> <varname2>` == `var2 += var1` or `concat <varname1> <varname2> <varname3>` == `var3 = var 1 + var 2` (for strings)
-* `mov <varname1> <varname2>` == `var2 = var1`
+* `add <varname1> <varname2>` == `var2 += var1` (for integers)
+* `add <varname1> <varname2> <varname3>` == `var3 = var 1 + var 2` (for integers)
+* `concat <varname1> <varname2>` == `var2 += var1` (for strings)
+* `concat <varname1> <varname2> <varname3>` == `var3 = var 1 + var 2` (for strings)
+* `mov <varname1> <varname2>` == `var2 = var1` (for integers and strings)
 * `ret`
 * `pop`
 * `swap`
