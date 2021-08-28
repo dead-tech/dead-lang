@@ -104,6 +104,7 @@ namespace vm::instructions {
 
 namespace vm::instructions::impl {
     void print_var(VmState &state, [[maybe_unused]] const Instruction &instruction);
+    void unconditional_jump(VmState &state, const std::string &label_name, std::size_t line_number);
     template<typename Type, typename BinaryOp>
     void binary_op(VmState &state, const Instruction &instruction, size_t output, BinaryOp binary_operation);
     template<typename UnaryOp>

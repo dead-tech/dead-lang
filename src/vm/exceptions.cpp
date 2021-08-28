@@ -113,4 +113,15 @@ namespace vm::exceptions {
     {
         return error.what();
     }
+
+    CallStackOverflow::CallStackOverflow(const std::size_t line_number, const std::size_t stack_size)
+    {
+        this->message = "Stack Overflow: Can't jump to label because call stack size " + std::to_string(stack_size) + " == MAX_CALL_STACK_SIZE";
+        error = VmError(this->message.c_str(), line_number);
+    }
+
+    const char *CallStackOverflow::what() const noexcept(true)
+    {
+        return error.what();
+    }
 }// namespace vm::exceptions

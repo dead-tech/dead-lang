@@ -145,16 +145,7 @@ namespace vm::instructions {
             throw exceptions::VmError("Invalid Arguments: `jump` instruction requires 1 argument the label name", instruction.line_number);
         }
 
-        const auto label = state.get_label("." + instruction.args[0], instruction.line_number);
-
-        if (label.rbegin()[1] != "ret") {
-            throw exceptions::NonReturningLabel(instruction.line_number, instruction.args[0]);
-        }
-
-        state.call_stack[++state.call_stack_ptr] = CallSite{.call_site_label = state.label_to_run, .offset_from_start = state.stack.ip};
-
-        state.label_to_run = "." + instruction.args[0];
-        state.stack.ip = 0;
+        impl::unconditional_jump(state, instruction.args[0], instruction.line_number);
 
         state.stack.ip++;
     }
@@ -165,21 +156,11 @@ namespace vm::instructions {
             throw exceptions::VmError("Invalid Arguments: `jumpne` instruction requires 3 argument the variable name, what to compare the variable against and the label to jump to", instruction.line_number);
         }
 
-        const std::string label_name = instruction.args[0];
-
-        const Label label = state.get_label("." + label_name, instruction.line_number);
         const auto [_, value] = state.get_variable<int32_t>(instruction.args[1], instruction.line_number);
-
-        if (label.rbegin()[1] != "ret") {
-            throw exceptions::NonReturningLabel(instruction.line_number, label_name);
-        }
 
         if (value != std::atoi(instruction.args[2].c_str()))// NOLINT(cert-err34-c)
         {
-            state.call_stack[++state.call_stack_ptr] = CallSite{.call_site_label = state.label_to_run, .offset_from_start = state.stack.ip};
-
-            state.label_to_run = "." + label_name;
-            state.stack.ip = 0;
+            impl::unconditional_jump(state, instruction.args[0], instruction.line_number);
         }
         else {
             state.stack.ip++;
@@ -310,6 +291,24 @@ namespace vm::instructions::impl {
         else if (const auto string = impl::get_v_opt<std::string>(it->second); string.has_value()) {
             std::cout << string.value() << '\n';
         }
+    }
+
+    void unconditional_jump(VmState &state, const std::string &label_name, const std::size_t line_number)
+    {
+        const auto label = state.get_label("." + label_name, line_number);
+
+        if (label.rbegin()[1] != "ret") {
+            throw exceptions::NonReturningLabel(line_number, label_name);
+        }
+
+        if (state.call_stack_ptr == state.call_stack.max_size() - 1) {
+            throw exceptions::CallStackOverflow(line_number, state.call_stack_ptr);
+        }
+
+        state.call_stack[++state.call_stack_ptr] = CallSite{.call_site_label = state.label_to_run, .offset_from_start = state.stack.ip};
+
+        state.label_to_run = "." + label_name;
+        state.stack.ip = 0;
     }
 
     template<typename Type, typename BinaryOp>
