@@ -72,7 +72,7 @@ namespace vm::exceptions {
 
     UndeclaredLabel::UndeclaredLabel(std::size_t line_number, const std::string &label_name)
     {
-        this->message = "Unknown Label: No label named \"" + label_name + "\" exists";
+        this->message = "(Line number may be incorrect) Unknown Label: No label named \"" + label_name + "\" exists";
         error = VmError(this->message.c_str(), line_number);
     }
 

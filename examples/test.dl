@@ -1,16 +1,22 @@
-// Label Testing Program
+// Fibonacci Sequence
 
 .main {
-    push "Main -> Testing labels"
-    print
-    jump test
-    push "Main -> This is printed after we returned from the label"
-    print
+    set x 0
+    set y 1
+    set z 0
+    set i 5
+    print x
+    print y
+    jump fib
     halt
 }
 
-.test {
-    push "Label Test -> This is printed from the label"
-    print
+.fib {
+    add x y z
+    print z
+    mov y x
+    mov z y
+    dec i
+    jumpne fib i 0
     ret
 }

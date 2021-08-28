@@ -1,18 +1,41 @@
 #include "instructions.hpp"
 
 namespace vm {
-    std::optional<Label> VmState::get_label(const std::string &label_name) const noexcept
+    Label VmState::get_label(const std::string &label_name, const std::size_t line_number) const
     {
         for (const auto &label : labels) {
             if (label[0].starts_with(label_name)) {
                 return label;
             }
         }
-        return std::nullopt;
+
+        throw exceptions::UndeclaredLabel(line_number, label_name);
+    }
+
+    template<typename Ret>
+    auto VmState::get_variable(const std::string &label_name, const std::size_t line_number) const -> std::tuple<decltype(vars.find(label_name)), Ret>
+    {
+        auto it = vars.find(label_name);
+
+        if (it == vars.end()) {
+            throw exceptions::UndeclaredVariable(line_number, label_name);
+        }
+
+        const std::optional<Ret> integer = instructions::impl::get_v_opt<Ret>(it->second);
+        return std::tuple{it, integer.value()};
+    }
+
+    void VmState::set_variable(const std::string &label_name, const std::any &value, const std::size_t line_number)
+    {
+        auto it = vars.find(label_name);
+
+        if (it == vars.end()) {
+            throw exceptions::UndeclaredVariable(line_number, label_name);
+        }
+
+        it->second = value;
     }
 }// namespace vm
-
-// ------------------------------------------------ INSTRUCTIONS ------------------------------------------------ //
 
 namespace vm::instructions {
 
@@ -122,14 +145,9 @@ namespace vm::instructions {
             throw exceptions::VmError("Invalid Arguments: `jump` instruction requires 1 argument the label name", instruction.line_number);
         }
 
-        const auto label = state.get_label("." + instruction.args[0]);
+        const auto label = state.get_label("." + instruction.args[0], instruction.line_number);
 
-        if (!label.has_value()) {
-            throw exceptions::UndeclaredLabel(instruction.line_number, instruction.args[0]);
-        }
-
-
-        if (label->rbegin()[1] != "ret") {
+        if (label.rbegin()[1] != "ret") {
             throw exceptions::NonReturningLabel(instruction.line_number, instruction.args[0]);
         }
 
@@ -139,6 +157,33 @@ namespace vm::instructions {
         state.stack.ip = 0;
 
         state.stack.ip++;
+    }
+
+    void jump_if_not_equal(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        if (instruction.args.size() < 3) {
+            throw exceptions::VmError("Invalid Arguments: `jumpne` instruction requires 3 argument the variable name, what to compare the variable against and the label to jump to", instruction.line_number);
+        }
+
+        const std::string label_name = instruction.args[0];
+
+        const Label label = state.get_label("." + label_name, instruction.line_number);
+        const auto [_, value] = state.get_variable<int32_t>(instruction.args[1], instruction.line_number);
+
+        if (label.rbegin()[1] != "ret") {
+            throw exceptions::NonReturningLabel(instruction.line_number, label_name);
+        }
+
+        if (value != std::atoi(instruction.args[2].c_str()))// NOLINT(cert-err34-c)
+        {
+            state.call_stack[++state.call_stack_ptr] = CallSite{.call_site_label = state.label_to_run, .offset_from_start = state.stack.ip};
+
+            state.label_to_run = "." + label_name;
+            state.stack.ip = 0;
+        }
+        else {
+            state.stack.ip++;
+        }
     }
 
     void ret(VmState &state, [[maybe_unused]] const Instruction &instruction)
@@ -154,6 +199,89 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
+    void dec(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        if (instruction.args.empty()) {
+            throw exceptions::VmError("Invalid Arguments: `dec` instruction requires 1 argument the variable name", instruction.line_number);
+        }
+
+        impl::unary_op(state, instruction, [](int32_t value) { return --value; });
+
+        state.stack.ip++;
+    }
+
+    void inc(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        if (instruction.args.empty()) {
+            throw exceptions::VmError("Invalid Arguments: `inc` instruction requires 1 argument the variable name", instruction.line_number);
+        }
+
+        impl::unary_op(state, instruction, [](int32_t value) { return ++value; });
+
+        state.stack.ip++;
+    }
+
+    void add(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+
+        if (instruction.args.size() < 2) {
+            throw exceptions::VmError("Invalid Arguments: `add` instruction requires 2 arguments the operands of the addition", instruction.line_number);
+        }
+
+        if (instruction.args.size() == 3) {
+            impl::binary_op<int32_t>(state, instruction, 2, std::plus<>());
+        }
+        else {
+            impl::binary_op<int32_t>(state, instruction, 1, std::plus<>());
+        }
+
+        // Idk if this is necessary at all
+        //        try {
+        //        }
+        //        catch ([[maybe_unused]] const exceptions::UndeclaredVariable &err) {
+        //            const auto value = std::atoi(instruction.args[0].c_str()) + std::atoi(instruction.args[1].c_str());// NOLINT(cert-err34-c)
+        //            state.set_variable(instruction.args[2], value, instruction.line_number);
+        //        }
+
+        state.stack.ip++;
+    }
+
+    void concat(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+
+        if (instruction.args.size() < 2) {
+            throw exceptions::VmError("Invalid Arguments: `concat` instruction requires 2 arguments the operands of the concatenation", instruction.line_number);
+        }
+
+        if (instruction.args.size() == 3) {
+            impl::binary_op<std::string>(state, instruction, 2, std::plus<>());
+        }
+        else {
+            impl::binary_op<std::string>(state, instruction, 1, std::plus<>());
+        }
+
+
+        // Idk if this is necessary at all
+        //        try {
+        //        }
+        //        catch ([[maybe_unused]] const exceptions::UndeclaredVariable &err) {
+        //            state.set_variable(instruction.args[2], instruction.args[0] + instruction.args[1], instruction.line_number);
+        //        }
+
+        state.stack.ip++;
+    }
+
+    void mov(VmState &state, [[maybe_unused]] const Instruction &instruction)
+    {
+        if (instruction.args.size() < 2) {
+            throw exceptions::VmError("Invalid Arguments: `mov` instruction requires 2 arguments the source variable and the destination variable", instruction.line_number);
+        }
+
+        const auto [it, value] = state.get_variable<int32_t>(instruction.args[0], instruction.line_number);
+        state.set_variable(instruction.args[1], it->second, instruction.line_number);
+
+        state.stack.ip++;
+    }
 
     void nop(VmState &state, [[maybe_unused]] const Instruction &instruction)
     {
@@ -176,13 +304,39 @@ namespace vm::instructions::impl {
             throw exceptions::UndeclaredVariable(instruction.line_number, instruction.args[0]);
         }
 
-        const auto value = it->second;
+        if (const auto integer = impl::get_v_opt<int32_t>(it->second); integer.has_value()) {
+            std::cout << integer.value() << '\n';
+        }
+        else if (const auto string = impl::get_v_opt<std::string>(it->second); string.has_value()) {
+            std::cout << string.value() << '\n';
+        }
+    }
 
-        if (typeid(value) == typeid(int32_t)) {
-            std::cout << std::any_cast<int32_t>(value) << '\n';
+    template<typename Type, typename BinaryOp>
+    void binary_op(VmState &state, [[maybe_unused]] const Instruction &instruction, const std::size_t output, BinaryOp binary_operation)
+    {
+        const auto [_it1, left] = state.get_variable<Type>(instruction.args[0], instruction.line_number);
+        const auto [_it2, right] = state.get_variable<Type>(instruction.args[1], instruction.line_number);
+
+        state.set_variable(instruction.args[output], binary_operation(left, right), instruction.line_number);
+    }
+
+    template<typename UnaryOp>
+    void unary_op(VmState &state, [[maybe_unused]] const Instruction &instruction, UnaryOp unary_op)
+    {
+        auto [it, value] = state.get_variable<int32_t>(instruction.args[0], instruction.line_number);
+
+        state.set_variable(it->first, unary_op(value), instruction.line_number);
+    }
+
+    template<typename T>
+    std::optional<T> get_v_opt(const std::any &any)
+    {
+        if (const T *v = std::any_cast<T>(&any)) {
+            return std::optional<T>(*v);
         }
         else {
-            std::cout << std::any_cast<std::string>(value) << '\n';
+            return std::nullopt;
         }
     }
 }// namespace vm::instructions::impl

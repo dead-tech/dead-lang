@@ -10,13 +10,8 @@ namespace vm {
 
         while (true) {
 
-            const auto label = state.get_label(state.label_to_run);
-
-            if (!label.has_value()) {
-                throw exceptions::VmError("(Line number is not correct) VmError: .main label not found", 0);
-            }
-
-            instructions::Instruction instruction = vm::parse_line(label.value()[state.stack.ip]);
+            const Label label = state.get_label(state.label_to_run, 0);
+            instructions::Instruction instruction = vm::parse_line(label[state.stack.ip]);
 
             const auto found = instructions::map.contains(instruction.op_code);
 

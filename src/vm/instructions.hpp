@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <any>
 #include <array>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <unordered_map>
@@ -31,7 +32,10 @@ namespace vm {
         std::array<CallSite, 16> call_stack;
         std::size_t call_stack_ptr = 0;
 
-        [[nodiscard]] std::optional<Label> get_label(const std::string &label_name) const noexcept;
+        [[nodiscard]] Label get_label(const std::string &label_name, std::size_t line_number) const;
+        template<typename Opt>
+        auto get_variable(const std::string &label_name, std::size_t line_number) const -> std::tuple<decltype(vars.find(label_name)), Opt>;
+        void set_variable(const std::string &label_name, const std::any &value, std::size_t line_number);
     };
 }// namespace vm
 
@@ -60,7 +64,19 @@ namespace vm::instructions {
 
     void jump(VmState &state, const Instruction &instruction);
 
+    void jump_if_not_equal(VmState &state, const Instruction &instruction);
+
     void ret(VmState &state, const Instruction &instruction);
+
+    void dec(VmState &state, const Instruction &instruction);
+
+    void inc(VmState &state, const Instruction &instruction);
+
+    void add(VmState &state, const Instruction &instruction);
+
+    void concat(VmState &state, const Instruction &instruction);
+
+    void mov(VmState &state, const Instruction &instruction);
 
     void nop(VmState &state, const Instruction &instruction);
 
@@ -74,7 +90,13 @@ namespace vm::instructions {
                     {"print"sv, &print},
                     {"set"sv, &set},
                     {"jump"sv, &jump},
+                    {"jumpne"sv, &jump_if_not_equal},
                     {"ret"sv, &ret},
+                    {"dec"sv, &dec},
+                    {"inc"sv, &inc},
+                    {"add"sv, &add},
+                    {"concat"sv, &concat},
+                    {"mov"sv, &mov},
                     {"nop"sv, &nop},
                     {"halt"sv, &halt},
     };
@@ -82,6 +104,12 @@ namespace vm::instructions {
 
 namespace vm::instructions::impl {
     void print_var(VmState &state, [[maybe_unused]] const Instruction &instruction);
-}
+    template<typename Type, typename BinaryOp>
+    void binary_op(VmState &state, const Instruction &instruction, size_t output, BinaryOp binary_operation);
+    template<typename UnaryOp>
+    void unary_op(VmState &state, [[maybe_unused]] const Instruction &instruction, UnaryOp unary_op);
+    template<typename T>
+    std::optional<T> get_v_opt(const std::any &any);
+}// namespace vm::instructions::impl
 
 #endif// INSTRUCTIONS_HPP
