@@ -17,9 +17,15 @@ Programming Language that compiles to the VM Bytecode.
 There's a stack virtual machine that has its own bytecode, that for now implements these instructions:
 
 * `push <number||dquoted string>`
-* `print <varname?> (optional, if not specified prints the element at the top of the stack)`
+* `print <varname?>` (optional, if not specified prints the element at the top of the stack)
 * `set <varname> <string||number>`
 * `jump <labelname>`
+* `jumpne <varname> <comparator> <labelname>`
+* `dec <varname>`
+* `inc <varname>`
+* `add <varname1> <varname2>` == `var2 += var1` or `add <varname1> <varname2> <varname3>` == `var3 = var 1 + var 2` (for integers)
+* `concat <varname1> <varname2>` == `var2 += var1` or `concat <varname1> <varname2> <varname3>` == `var3 = var 1 + var 2` (for strings)
+* `mov <varname1> <varname2>` == `var2 = var1`
 * `ret`
 * `pop`
 * `swap`
