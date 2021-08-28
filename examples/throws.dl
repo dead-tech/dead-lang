@@ -1,4 +1,5 @@
 .main {
+    drop x
     jump test
     halt
 }
@@ -6,9 +7,5 @@
 .test {
     push 1
     print
-    ret
-}
-
-.test {
     ret
 }

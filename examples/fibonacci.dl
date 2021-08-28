@@ -1,0 +1,22 @@
+// Fibonacci Sequence
+
+.main {
+    set x 0
+    set y 1
+    set z 0
+    set i 5
+    print x
+    print y
+    jump fib
+    halt
+}
+
+.fib {
+    add x y z
+    print z
+    mov y x
+    mov z y
+    dec i
+    jumpne fib i 0
+    ret
+}

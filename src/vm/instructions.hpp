@@ -62,6 +62,8 @@ namespace vm::instructions {
 
     void set(VmState &state, const Instruction &instruction);
 
+    void drop(VmState &state, const Instruction &instruction);
+
     void jump(VmState &state, const Instruction &instruction);
 
     void jump_if_not_equal(VmState &state, const Instruction &instruction);
@@ -89,6 +91,7 @@ namespace vm::instructions {
                     {"swap"sv, &swap},
                     {"print"sv, &print},
                     {"set"sv, &set},
+                    {"drop"sv, &drop},
                     {"jump"sv, &jump},
                     {"jumpne"sv, &jump_if_not_equal},
                     {"ret"sv, &ret},

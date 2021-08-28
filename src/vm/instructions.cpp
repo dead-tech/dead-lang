@@ -139,6 +139,22 @@ namespace vm::instructions {
         state.stack.ip++;
     }
 
+    void drop(VmState &state, const Instruction &instruction)
+    {
+        if (instruction.args.empty()) {
+            throw exceptions::VmError("Invalid Arguments: `drop` instruction requires 1 argument the variable name", instruction.line_number);
+        }
+
+        const auto node_handle = state.vars.extract(instruction.args[0]);
+
+        if (node_handle.empty())
+        {
+            throw exceptions::UndeclaredVariable(instruction.line_number, instruction.args[0]);
+        }
+
+        state.stack.ip++;
+    }
+
     void jump(VmState &state, const Instruction &instruction)
     {
         if (instruction.args.empty()) {
