@@ -19,8 +19,8 @@ namespace vm {
     using Label = std::vector<std::string>;
 
     template<typename Type>
-    using ValidType = std::enable_if_t<std::same_as<Type, std::string> || std::same_as<Type, int32_t>, bool>;
-    
+    using ValidType = std::enable_if_t<std::is_same_v<Type, std::string> || std::is_same_v<Type, int32_t>, bool>;
+
     template<typename Fn, typename... Args>
     using Invocable = std::enable_if_t<std::is_invocable_v<Fn, Args...>, bool>;
 
