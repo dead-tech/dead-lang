@@ -12,7 +12,7 @@ namespace vm {
         throw exceptions::UndeclaredLabel(line_number, label_name);
     }
 
-    template<typename Ret>
+    template<ValidType Ret>
     auto VmState::get_variable(const std::string &label_name, const std::size_t line_number) const -> std::tuple<decltype(vars.find(label_name)), Ret>
     {
         auto it = vars.find(label_name);
@@ -147,8 +147,7 @@ namespace vm::instructions {
 
         const auto node_handle = state.vars.extract(instruction.args[0]);
 
-        if (node_handle.empty())
-        {
+        if (node_handle.empty()) {
             throw exceptions::UndeclaredVariable(instruction.line_number, instruction.args[0]);
         }
 
@@ -226,10 +225,10 @@ namespace vm::instructions {
         }
 
         if (instruction.args.size() == 3) {
-            impl::binary_op<int32_t>(state, instruction, 2, std::plus<>());
+            impl::binary_op<int32_t>(state, instruction, 2, [](const auto lhs, const auto rhs) { return lhs + rhs; });
         }
         else {
-            impl::binary_op<int32_t>(state, instruction, 1, std::plus<>());
+            impl::binary_op<int32_t>(state, instruction, 1, [](const auto lhs, const auto rhs) { return lhs + rhs; });
         }
 
         // Idk if this is necessary at all
@@ -251,10 +250,10 @@ namespace vm::instructions {
         }
 
         if (instruction.args.size() == 3) {
-            impl::binary_op<std::string>(state, instruction, 2, std::plus<>());
+            impl::binary_op<std::string>(state, instruction, 2, [](const auto lhs, const auto rhs) { return lhs + rhs; });
         }
         else {
-            impl::binary_op<std::string>(state, instruction, 1, std::plus<>());
+            impl::binary_op<std::string>(state, instruction, 1, [](const auto lhs, const auto rhs) { return lhs + rhs; });
         }
 
 
@@ -327,8 +326,9 @@ namespace vm::instructions::impl {
         state.stack.ip = 0;
     }
 
-    template<typename Type, typename BinaryOp>
-    void binary_op(VmState &state, const Instruction &instruction, const std::size_t output, BinaryOp binary_operation)
+    template<ValidType Type, typename BinaryOp>
+    requires std::invocable<BinaryOp, Type &, Type &>
+    void binary_op(VmState &state, const Instruction &instruction, const std::size_t output, BinaryOp &&binary_operation)
     {
         const auto [_it1, left] = state.get_variable<Type>(instruction.args[0], instruction.line_number);
         const auto [_it2, right] = state.get_variable<Type>(instruction.args[1], instruction.line_number);
@@ -337,14 +337,15 @@ namespace vm::instructions::impl {
     }
 
     template<typename UnaryOp>
-    void unary_op(VmState &state, const Instruction &instruction, UnaryOp unary_op)
+    requires std::invocable<UnaryOp, int32_t>
+    void unary_op(VmState &state, const Instruction &instruction, UnaryOp &&unary_op)
     {
         auto [it, value] = state.get_variable<int32_t>(instruction.args[0], instruction.line_number);
 
         state.set_variable(it->first, unary_op(value), instruction.line_number);
     }
 
-    template<typename T>
+    template<ValidType T>
     std::optional<T> get_v_opt(const std::any &any)
     {
         if (const T *v = std::any_cast<T>(&any)) {

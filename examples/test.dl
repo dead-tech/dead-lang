@@ -1,9 +1,9 @@
 // Test program
 
 .main {
-    set x 77
-    print x
-    drop x
-    set x 66
-    print x
+    set str1 "Hello, "
+    set str2 "World!"
+    concat str1 str2
+    print str2
+    halt
 }
