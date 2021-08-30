@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <any>
 #include <array>
-#include <concepts>
 #include <functional>
 #include <iostream>
 #include <optional>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -19,10 +19,10 @@ namespace vm {
     using Label = std::vector<std::string>;
 
     template<typename Type>
-    concept ValidType = requires
-    {
-        std::same_as<Type, std::string> || std::same_as<Type, int32_t>;
-    };
+    using ValidType = std::enable_if_t<std::same_as<Type, std::string> || std::same_as<Type, int32_t>, bool>;
+    
+    template<typename Fn, typename... Args>
+    using Invocable = std::enable_if_t<std::is_invocable_v<Fn, Args...>, bool>;
 
     struct CallSite {
         std::string call_site_label;
@@ -40,8 +40,10 @@ namespace vm {
         std::size_t call_stack_ptr = 0;
 
         [[nodiscard]] Label get_label(const std::string &label_name, std::size_t line_number) const;
-        template<ValidType Ret>
+
+        template<typename Ret, ValidType<Ret> = true>
         auto get_variable(const std::string &label_name, std::size_t line_number) const -> std::tuple<decltype(vars.find(label_name)), Ret>;
+
         void set_variable(const std::string &label_name, const std::any &value, std::size_t line_number);
     };
 }// namespace vm
@@ -117,15 +119,16 @@ namespace vm::instructions::impl {
 
     void unconditional_jump(VmState &state, const std::string &label_name, std::size_t line_number);
 
-    template<ValidType Type, typename BinaryOp>
-    requires std::invocable<BinaryOp, Type &, Type &>
+    template<typename Type,
+             ValidType<Type> = true,
+             typename BinaryOp,
+             Invocable<BinaryOp, Type &, Type &> = true>
     void binary_op(VmState &state, const Instruction &instruction, size_t output, BinaryOp &&binary_operation);
 
-    template<typename UnaryOp>
-    requires std::invocable<UnaryOp, int32_t>
+    template<typename UnaryOp, std::enable_if_t<std::is_invocable_v<UnaryOp, int32_t>, bool> = true>
     void unary_op(VmState &state, [[maybe_unused]] const Instruction &instruction, UnaryOp &&unary_op);
 
-    template<ValidType T>
+    template<typename T, ValidType<T> = true>
     std::optional<T> get_v_opt(const std::any &any);
 }// namespace vm::instructions::impl
 
