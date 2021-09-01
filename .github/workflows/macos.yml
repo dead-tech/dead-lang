@@ -15,14 +15,12 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Check CMake
     - name: Select latest XCode version
       run: sudo xcode-select -switch /Applications/Xcode_12.5.1.app
     - name: Set CXX=clang++
       run: echo "CC=clang" >> $GITHUB_ENV
     - name: Set CXX=clang
       run: echo "CXX=clang++" >> $GITHUB_ENV
-      run: cmake --version
     - name: Configure CMake
       run: cmake -S. -B ${{github.workspace}}/build -G "Xcode" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     - name: Build
