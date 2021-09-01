@@ -12,7 +12,7 @@ namespace vm {
         throw exceptions::UndeclaredLabel(line_number, label_name);
     }
 
-    template<typename Ret, ValidType<Ret>>
+    template<ValidType Ret>
     auto VmState::get_variable(const std::string &label_name, const std::size_t line_number) const -> std::tuple<decltype(vars.find(label_name)), Ret>
     {
         auto it = vars.find(label_name);
@@ -326,10 +326,8 @@ namespace vm::instructions::impl {
         state.stack.ip = 0;
     }
 
-    template<typename Type,
-             ValidType<Type>,
-             typename BinaryOp,
-             Invocable<BinaryOp, Type &, Type &>>
+    template<ValidType Type, typename BinaryOp>
+    requires std::invocable<BinaryOp, Type &, Type &>
     void binary_op(VmState &state, const Instruction &instruction, const std::size_t output, BinaryOp &&binary_operation)
     {
         const auto [_it1, left] = state.get_variable<Type>(instruction.args[0], instruction.line_number);
@@ -338,7 +336,8 @@ namespace vm::instructions::impl {
         state.set_variable(instruction.args[output], binary_operation(left, right), instruction.line_number);
     }
 
-    template<typename UnaryOp, Invocable<UnaryOp, int32_t>>
+    template<typename UnaryOp>
+    requires std::invocable<UnaryOp, int32_t>
     void unary_op(VmState &state, const Instruction &instruction, UnaryOp &&unary_op)
     {
         auto [it, value] = state.get_variable<int32_t>(instruction.args[0], instruction.line_number);
@@ -346,7 +345,7 @@ namespace vm::instructions::impl {
         state.set_variable(it->first, unary_op(value), instruction.line_number);
     }
 
-    template<typename T, ValidType<T>>
+    template<ValidType T>
     std::optional<T> get_v_opt(const std::any &any)
     {
         if (const T *v = std::any_cast<T>(&any)) {

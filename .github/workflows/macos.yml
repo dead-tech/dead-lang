@@ -8,14 +8,20 @@ on:
 
 env:
   BUILD_TYPE: Release
-      
+
 jobs:
-  # Building using the github runner environement directly.
+  # Building using the github runner environment directly.
   xcode:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
     - name: Check CMake
+    - name: Select latest XCode version
+    sudo xcode-select -switch /Applications/Xcode_12.5.1.app
+    - name: Set CXX=clang++
+    echo "CC=clang" >> $GITHUB_ENV
+    - name: Set CXX=clang
+    echo "CXX=clang++" >> $GITHUB_ENV
       run: cmake --version
     - name: Configure CMake
       run: cmake -S. -B ${{github.workspace}}/build -G "Xcode" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -25,10 +31,13 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Check CMake
-      run: cmake --version
+    - name: Get latest G++/GCC version
+    run: brew install gcc-11
+    - name: Set CXX=g++-11
+      run: echo "CXX=g++-11" >> $GITHUB_ENV
+    - name: Set C=gcc-11
+    run: echo "C=gcc-11" >> $GITHUB_ENV
     - name: Configure CMake
       run: cmake -S. -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
- 

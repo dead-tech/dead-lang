@@ -14,12 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Get Latest G++/GCC version 
+    - name: Get Latest G++/GCC version
       run: sudo apt install gcc-11 g++-11
     - name: Set CXX=g++-11
       run: echo "CXX=g++-11" >> $GITHUB_ENV
+    - name: Set C=gcc-11
+    run: echo "C=gcc-11" >> $GITHUB_ENV
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      
