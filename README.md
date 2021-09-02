@@ -36,7 +36,7 @@ There's a stack virtual machine that has its own bytecode, that for now implemen
 
 For more information about the instructions and their usage checkout the [examples folder](examples/) in the repo.
 
-## Dependecies
+## Dependencies
 
 This project currently has zero dependencies other than the standard library.
 
