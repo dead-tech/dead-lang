@@ -1,0 +1,26 @@
+.main {
+    set i 5
+    jump for
+    halt
+}
+
+.for {
+    set j 5
+    set msg "For"
+    print msg
+    jump for1
+    drop j
+    drop msg
+    dec i
+    jumpne for i 0
+    ret
+}
+
+.for1 {
+    set msg1 "For1"
+    print msg1
+    drop msg1
+    dec j
+    jumpne for1 j 0
+    ret
+}
