@@ -38,7 +38,7 @@ For more information about the instructions and their usage checkout the [exampl
 
 ## Dependencies
 
-This project currently has zero dependencies other than the standard library.
+* [dtlib](include/dtlib) (currently private)
 
 ## Building
 
