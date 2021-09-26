@@ -10,7 +10,9 @@ project("dead-lang" VERSION 0.1)
 add_subdirectory("src")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(dead-lang PRIVATE /WX /W4 /w44265 /w44061 /w44062 /permissive- /wd4100)
+    target_compile_options(dead-lang PRIVATE /WX /w44265 /w44061 /w44062 /permissive- /wd4100)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(dead-lang PRIVATE -Wall -Wextra -Werror -pedantic)
 endif ()
+
+target_include_directories(dead-lang PRIVATE "include/")
