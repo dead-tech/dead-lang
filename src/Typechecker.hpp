@@ -1,10 +1,10 @@
 #pragma once
 
-#include <string>
 #include <cstdint>
+#include <string>
 
 class [[nodiscard]] Typechecker {
-public:
+  public:
     enum class BuiltinType : std::uint8_t {
         I32 = 0,
         NONE,

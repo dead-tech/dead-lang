@@ -1,21 +1,24 @@
 #define FMT_HEADER_ONLY
-#include <fmt/core.h>
+
 #include <fmt/color.h>
+#include <fmt/core.h>
 #include <fmt/format.h>
 
 #define FMT_FORMATTERS
+
 #include <dtsutil/filesystem.hpp>
 
 #include "Lexer.hpp"
 #include "Parser.hpp"
 #include "Supervisor.hpp"
 
-static void print_usage() {
-    fmt::println("usage: ./dead_lang <file.dl>");
-}
+static void print_usage() { fmt::println("usage: ./dead_lang <file.dl>"); }
 
 int main(int argc, char** argv) {
-    if (argc < 2) { print_usage(); return 1;}
+    if (argc < 2) {
+        print_usage();
+        return 1;
+    }
 
     const auto file_content = dts::read_file(argv[1]);
     if (!file_content.has_value()) {
