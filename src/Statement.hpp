@@ -144,3 +144,13 @@ class [[nodiscard]] ForStatement final : public Statement {
     std::string                m_increment_statement;
     BlockStatement             m_body;
 };
+
+class [[nodiscard]] ExpressionStatement final : public Statement {
+  public:
+    explicit ExpressionStatement(std::string expression) noexcept;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    std::string m_expression;
+};

@@ -146,3 +146,8 @@ std::string ForStatement::evaluate() const noexcept {
 
     return c_for_code;
 }
+
+ExpressionStatement::ExpressionStatement(std::string expression) noexcept
+  : m_expression{ std::move(expression) } {}
+
+std::string ExpressionStatement::evaluate() const noexcept { return m_expression + ";"; }

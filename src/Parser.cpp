@@ -95,7 +95,7 @@ std::shared_ptr<Statement> Parser::parse_statement() noexcept {
             return parse_for_statement();
         }
         default: {
-            return nullptr;
+            return parse_expression_statement();
         }
     }
 }
@@ -341,6 +341,23 @@ std::shared_ptr<Statement> Parser::parse_for_statement() noexcept {
     }
 
     return std::make_shared<ForStatement>(ForStatement(initializer, condition, increment, BlockStatement(body)));
+}
+
+std::shared_ptr<Statement> Parser::parse_expression_statement() noexcept {
+    const auto expression = parse_expression(Token::Type::SEMICOLON);
+    if (expression.empty()) {
+        m_supervisor->push_error("expected expression while parsing expression statement", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::SEMICOLON)) {
+        m_supervisor->push_error(
+          "expected ';' after expression while parsing expression statement", previous_position()
+        );
+        return nullptr;
+    }
+
+    return std::make_shared<ExpressionStatement>(ExpressionStatement(expression));
 }
 
 std::string Parser::parse_expression(const Token::Type& delimiter) noexcept {
