@@ -37,5 +37,7 @@ class [[nodiscard]] Lexer : public Iterator<std::string> {
 
     [[nodiscard]] Token lex_single_quoted_string() noexcept;
 
+    [[nodiscard]] Token lex_number() noexcept;
+
     std::shared_ptr<Supervisor> m_supervisor;
 };

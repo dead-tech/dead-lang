@@ -62,6 +62,14 @@ Token Lexer::next_token() noexcept {
             advance(1);
             return Token::create(Token::Type::AMPERSAND, "&", Position::create(cursor(), cursor()));
         }
+        case '[': {
+            advance(1);
+            return Token::create(Token::Type::LEFT_BRACKET, "[", Position::create(cursor(), cursor()));
+        }
+        case ']': {
+            advance(1);
+            return Token::create(Token::Type::RIGHT_BRACKET, "]", Position::create(cursor(), cursor()));
+        }
         case '+': {
             return lex_plus();
         }
@@ -92,6 +100,8 @@ void Lexer::skip_whitespaces() noexcept {
 
 Token Lexer::lex_keyword_or_identifier() noexcept {
     const auto start = cursor();
+
+    if (std::isdigit(peek().value()) != 0) { return lex_number(); }
 
     std::string value;
     while (!eof()) {
@@ -186,4 +196,22 @@ Token Lexer::lex_single_quoted_string() noexcept {
     return Token::create(
       Token::Type::SINGLE_QUOTED_STRING, std::string(1, quoted.value()), Position::create(start, cursor())
     );
+}
+
+Token Lexer::lex_number() noexcept {
+    const auto start = cursor();
+
+    std::string value;
+    while (!eof()) {
+        const auto ch = peek().value();
+
+        if (std::isdigit(ch) != 0) {
+            value += ch;
+            advance(1);
+        } else {
+            break;
+        }
+    }
+
+    return Token::create(Token::Type::NUMBER, std::move(value), Position::create(start, cursor()));
 }
