@@ -1,30 +1,27 @@
 #include "Lexer.hpp"
 
-std::vector<Token> Lexer::lex(std::string source, const std::shared_ptr<Supervisor> &supervisor) noexcept {
+std::vector<Token> Lexer::lex(std::string source, const std::shared_ptr<Supervisor>& supervisor) noexcept {
     Lexer lexer(std::move(source), supervisor);
 
     std::vector<Token> tokens;
     while (!lexer.eof() && !supervisor->has_errors()) {
         const auto token = lexer.next_token();
-        if (!token.matches(Token::Type::END_OF_FILE)) {
-            tokens.push_back(token);
-        }
+        if (!token.matches(Token::Type::END_OF_FILE)) { tokens.push_back(token); }
     }
 
     return tokens;
 }
 
-Lexer::Lexer(std::string &&source, const std::shared_ptr<Supervisor> &supervisor) noexcept
-        : Iterator(source), m_supervisor{supervisor} {}
+Lexer::Lexer(std::string&& source, const std::shared_ptr<Supervisor>& supervisor) noexcept
+  : Iterator(source),
+    m_supervisor{ supervisor } {}
 
 Token Lexer::next_token() noexcept {
     if (m_supervisor->has_errors()) { return Token::create_dumb(); }
 
     skip_whitespaces();
 
-    if (const auto ch = peek(); !ch.has_value()) {
-        return Token::create_dumb();
-    }
+    if (const auto ch = peek(); !ch.has_value()) { return Token::create_dumb(); }
 
     const auto ch = peek().value();
     switch (ch) {
@@ -61,11 +58,18 @@ Token Lexer::next_token() noexcept {
             advance(1);
             return Token::create(Token::Type::COMMA, ",", Position::create(cursor(), cursor()));
         }
+        case '&': {
+            advance(1);
+            return Token::create(Token::Type::AMPERSAND, "&", Position::create(cursor(), cursor()));
+        }
         case '+': {
             return lex_plus();
         }
         case '<': {
             return lex_less_than();
+        }
+        case '\'': {
+            return lex_single_quoted_string();
         }
         default: {
             return lex_keyword_or_identifier();
@@ -102,7 +106,7 @@ Token Lexer::lex_keyword_or_identifier() noexcept {
     }
 
     if (const auto keyword = Token::is_keyword(value);
-            keyword != Token::Type::IDENTIFIER && keyword != Token::Type::END_OF_FILE) {
+        keyword != Token::Type::IDENTIFIER && keyword != Token::Type::END_OF_FILE) {
         return Token::create(keyword, std::move(value), Position::create(start, cursor()));
     }
 
@@ -164,4 +168,22 @@ Token Lexer::lex_less_than() noexcept {
 
     advance(1);
     return Token::create(Token::Type::LESS, "<", Position::create(start, cursor()));
+}
+
+Token Lexer::lex_single_quoted_string() noexcept {
+    const auto start = cursor();
+
+    // Skip the opening single quote
+    advance(1);
+    const auto quoted       = next();
+    const auto ending_quote = next();
+
+    if (!quoted || !ending_quote || ending_quote.value() != '\'') {
+        m_supervisor->push_error("unterminated or empty single quoted string", Position::create(start, cursor()));
+        return Token::create_dumb();
+    }
+
+    return Token::create(
+      Token::Type::SINGLE_QUOTED_STRING, std::string(1, quoted.value()), Position::create(start, cursor())
+    );
 }

@@ -92,6 +92,7 @@ class [[nodiscard]] VariableStatement final : public Statement {
     VariableStatement(
       const bool               is_mutable,
       Typechecker::BuiltinType type,
+      std::string              type_extensions,
       std::string              name,
       std::string              expression
     ) noexcept;
@@ -101,6 +102,7 @@ class [[nodiscard]] VariableStatement final : public Statement {
   private:
     bool                     m_is_mutable;
     Typechecker::BuiltinType m_type;
+    std::string              m_type_extensions;
     std::string              m_name;
     std::string              m_expression;
 };

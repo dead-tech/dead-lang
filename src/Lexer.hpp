@@ -1,23 +1,23 @@
 #pragma once
 
 #include <expected>
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include <fmt/format.h>
 
-#include "Token.hpp"
 #include "Iterator.hpp"
 #include "Position.hpp"
 #include "Supervisor.hpp"
+#include "Token.hpp"
 
 class [[nodiscard]] Lexer : public Iterator<std::string> {
-public:
+  public:
     [[nodiscard]] static std::vector<Token>
-    lex(std::string source, const std::shared_ptr<Supervisor> &supervisor) noexcept;
+      lex(std::string source, const std::shared_ptr<Supervisor>& supervisor) noexcept;
 
-private:
-    explicit Lexer(std::string &&source, const std::shared_ptr<Supervisor> &supervisor) noexcept;
+  private:
+    explicit Lexer(std::string&& source, const std::shared_ptr<Supervisor>& supervisor) noexcept;
 
     [[nodiscard]] Token next_token() noexcept;
 
@@ -34,6 +34,8 @@ private:
     [[nodiscard]] Token lex_plus() noexcept;
 
     [[nodiscard]] Token lex_less_than() noexcept;
+
+    [[nodiscard]] Token lex_single_quoted_string() noexcept;
 
     std::shared_ptr<Supervisor> m_supervisor;
 };

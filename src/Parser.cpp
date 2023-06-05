@@ -176,6 +176,11 @@ std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
     // Skip the type
     advance(1);
 
+    std::string type_extensions;
+    consume_tokens_until(Token::Type::IDENTIFIER, [this, &type_extensions] {
+        type_extensions.append(next()->lexeme());
+    });
+
     std::string variable_name;
     const auto  variable_name_token = next();
     if (!variable_name_token || !variable_name_token->matches(Token::Type::IDENTIFIER)) {
@@ -217,7 +222,9 @@ std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
         return nullptr;
     }
 
-    return std::make_shared<VariableStatement>(VariableStatement(is_mutable, variable_type, variable_name, expression));
+    return std::make_shared<VariableStatement>(
+      VariableStatement(is_mutable, variable_type, type_extensions, variable_name, expression)
+    );
 }
 
 std::shared_ptr<Statement> Parser::parse_variable_assignment() noexcept {

@@ -23,6 +23,7 @@ class [[nodiscard]] Token {
         SEMICOLON,
         SLASH,
         STAR,
+        AMPERSAND,
 
         // Multi-character tokens
         // Comparison
@@ -59,7 +60,7 @@ class [[nodiscard]] Token {
 
         // Literals
         IDENTIFIER,
-        STRING,
+        SINGLE_QUOTED_STRING,
         NUMBER,
 
         // Magic tokens

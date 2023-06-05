@@ -1,5 +1,6 @@
 #include "Statement.hpp"
 
+#include <fmt/format.h>
 #include <utility>
 
 BlockStatement::BlockStatement(std::vector<std::shared_ptr<Statement>> block) noexcept
@@ -40,19 +41,20 @@ std::string FunctionStatement::evaluate() const noexcept {
     for (const auto& argument : arguments) {
         const auto pieces = dts::split_str(argument, ' ');
 
-        if (pieces.front() == "mut") {
-            // mut type name
-            const std::string& variable_type = pieces[1];
-            const std::string& variable_name = pieces[2];
+        const std::size_t is_mutable = pieces.front() == "mut" ? 1 : 0;
 
-            c_args += Typechecker::builtin_type_to_c_type(variable_type) + " " + variable_name;
-        } else {
-            // type name
-            const std::string& variable_type = pieces[0];
-            const std::string& variable_name = pieces[1];
+        const std::string& variable_type   = pieces[0 + is_mutable];
+        const std::string  type_extensions = std::accumulate(
+          pieces.begin() + 1 + static_cast<long>(is_mutable),
+          pieces.end() - 1,
+          std::string{},
+          [](const auto& acc, const auto& piece) { return acc + piece; }
+        );
+        const std::string& variable_name = pieces.back();
 
-            c_args += "const " + Typechecker::builtin_type_to_c_type(variable_type) + " " + variable_name;
-        }
+        c_args += static_cast<bool>(is_mutable) ? "" : "const ";
+        c_args +=
+          fmt::format("{}{} {}", Typechecker::builtin_type_to_c_type(variable_type), type_extensions, variable_name);
 
         if (&argument != &arguments.back()) { c_args += ", "; }
     }
@@ -93,17 +95,20 @@ std::string ReturnStatement::evaluate() const noexcept { return "return " + m_ex
 VariableStatement::VariableStatement(
   const bool               is_mutable,
   Typechecker::BuiltinType type,
+  std::string              type_extensions,
   std::string              name,
   std::string              expression
 ) noexcept
   : m_is_mutable{ is_mutable },
     m_type{ type },
+    m_type_extensions{ std::move(type_extensions) },
     m_name{ std::move(name) },
     m_expression{ std::move(expression) } {}
 
 std::string VariableStatement::evaluate() const noexcept {
     const std::string mutability = m_is_mutable ? "" : "const ";
-    return mutability + Typechecker::builtin_type_to_c_type(m_type) + " " + m_name + " = " + m_expression + ";";
+    return mutability + Typechecker::builtin_type_to_c_type(m_type) + m_type_extensions + " " + m_name + " = "
+           + m_expression + ";";
 }
 
 PlusEqualStatement::PlusEqualStatement(std::string name, std::string expression) noexcept
