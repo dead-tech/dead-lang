@@ -16,6 +16,8 @@ class [[nodiscard]] Token {
         RIGHT_PAREN,
         LEFT_BRACE,
         RIGHT_BRACE,
+        LEFT_BRACKET,
+        RIGHT_BRACKET,
         COMMA,
         DOT,
         MINUS,
@@ -156,6 +158,12 @@ class [[nodiscard]] Token {
             }
             case Type::FOR: {
                 return "for";
+            }
+            case Type::LEFT_BRACKET: {
+                return "[";
+            }
+            case Type::RIGHT_BRACKET: {
+                return "]";
             }
             default: {
                 return "not implemented";

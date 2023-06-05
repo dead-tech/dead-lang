@@ -131,4 +131,8 @@ class [[nodiscard]] Typechecker {
     [[nodiscard]] static constexpr std::string builtin_type_to_c_type(const std::string& type) noexcept {
         return builtin_type_to_c_type(builtin_type_from_string(type));
     }
+
+    [[nodiscard]] static constexpr bool is_fixed_size_array(const std::string& type_extensions) {
+        return !type_extensions.empty() && type_extensions.front() == '[' && type_extensions.back() == ']';
+    }
 };

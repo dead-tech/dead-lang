@@ -156,3 +156,29 @@ ExpressionStatement::ExpressionStatement(std::string expression) noexcept
   : m_expression{ std::move(expression) } {}
 
 std::string ExpressionStatement::evaluate() const noexcept { return m_expression + ";"; }
+
+
+ArrayStatement::ArrayStatement(
+  bool                     is_mutable,
+  Typechecker::BuiltinType type,
+  std::string              type_extensions,
+  std::string              name,
+  std::string              elements
+) noexcept
+  : m_is_mutable{ is_mutable },
+    m_type{ type },
+    m_type_extensions{ std::move(type_extensions) },
+    m_name{ std::move(name) },
+    m_elements{ std::move(elements) } {}
+
+std::string ArrayStatement::evaluate() const noexcept {
+    const std::string mutability = m_is_mutable ? "" : "const ";
+    return fmt::format(
+      "{} {} {}{} = {{ {} }};",
+      mutability,
+      Typechecker::builtin_type_to_c_type(m_type),
+      m_name,
+      m_type_extensions,
+      m_elements
+    );
+}

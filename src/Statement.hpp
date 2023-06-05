@@ -156,3 +156,23 @@ class [[nodiscard]] ExpressionStatement final : public Statement {
   private:
     std::string m_expression;
 };
+
+class [[nodiscard]] ArrayStatement final : public Statement {
+  public:
+    ArrayStatement(
+      bool                     is_mutable,
+      Typechecker::BuiltinType type,
+      std::string              type_extensions,
+      std::string              name,
+      std::string              elements
+    ) noexcept;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    bool                     m_is_mutable;
+    Typechecker::BuiltinType m_type;
+    std::string              m_type_extensions;
+    std::string              m_name;
+    std::string              m_elements;
+};

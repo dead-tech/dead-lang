@@ -181,16 +181,21 @@ std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
         type_extensions.append(next()->lexeme());
     });
 
-    std::string variable_name;
-    const auto  variable_name_token = next();
-    if (!variable_name_token || !variable_name_token->matches(Token::Type::IDENTIFIER)) {
-        m_supervisor->push_error(
-          "expected variable name after variable type while parsing", peek_behind(2)->position()
-        );
-        return nullptr;
+    // Check if the variable is of array type
+    if (Typechecker::is_fixed_size_array(type_extensions)) {
+        return parse_array_statement(is_mutable, variable_type, type_extensions);
     }
 
-    variable_name = variable_name_token->lexeme();
+    const std::string variable_name = parse_variable_name();
+    //    const auto variable_name_token = next();
+    //    if (!variable_name_token || !variable_name_token->matches(Token::Type::IDENTIFIER)) {
+    //        m_supervisor->push_error(
+    //                "expected variable name after variable type while parsing", peek_behind(2)->position()
+    //        );
+    //        return nullptr;
+    //    }
+    //
+    //    variable_name = variable_name_token->lexeme();
 
     // Skip equal sign
     const auto equal_token = peek();
@@ -367,6 +372,39 @@ std::shared_ptr<Statement> Parser::parse_expression_statement() noexcept {
     return std::make_shared<ExpressionStatement>(ExpressionStatement(expression));
 }
 
+std::shared_ptr<Statement> Parser::parse_array_statement(
+  const bool                      is_mutable,
+  const Typechecker::BuiltinType& variable_type,
+  const std::string&              type_extensions
+) noexcept {
+    const auto variable_name = parse_variable_name();
+
+    if (!matches_and_consume(Token::Type::EQUAL)) {
+        m_supervisor->push_error("expected '=' after array declaration while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::LEFT_BRACKET)) {
+        m_supervisor->push_error("expected '[' after array declaration while parsing", previous_position());
+        return nullptr;
+    }
+
+    const auto array_elements = parse_expression(Token::Type::RIGHT_BRACKET);
+    if (!matches_and_consume(Token::Type::RIGHT_BRACKET)) {
+        m_supervisor->push_error("expected ']' after array declaration while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::SEMICOLON)) {
+        m_supervisor->push_error("expected ';' after array declaration while parsing", previous_position());
+        return nullptr;
+    }
+
+    return std::make_shared<ArrayStatement>(
+      ArrayStatement(is_mutable, variable_type, type_extensions, variable_name, array_elements)
+    );
+}
+
 std::string Parser::parse_expression(const Token::Type& delimiter) noexcept {
     std::string expression;
     consume_tokens_until(delimiter, [this, &expression] { expression.append(next()->lexeme()); });
@@ -379,6 +417,18 @@ std::vector<std::shared_ptr<Statement>> Parser::parse_statement_block() noexcept
     consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &block] { block.push_back(parse_statement()); });
 
     return block;
+}
+
+std::string Parser::parse_variable_name() noexcept {
+    const auto variable_name_token = next();
+    if (!variable_name_token || !variable_name_token->matches(Token::Type::IDENTIFIER)) {
+        m_supervisor->push_error(
+          "expected variable name after variable type while parsing", peek_behind(2)->position()
+        );
+        return "";
+    }
+
+    return variable_name_token->lexeme();
 }
 
 Position Parser::previous_position() const noexcept { return previous().value_or(Token::create_dumb()).position(); }

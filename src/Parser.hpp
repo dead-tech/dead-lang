@@ -46,9 +46,17 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] std::shared_ptr<Statement> parse_expression_statement() noexcept;
 
+    [[nodiscard]] std::shared_ptr<Statement> parse_array_statement(
+      const bool                      is_mutable,
+      const Typechecker::BuiltinType& array_type,
+      const std::string&              type_extensions
+    ) noexcept;
+
     [[nodiscard]] std::string parse_expression(const Token::Type& delimiter) noexcept;
 
     [[nodiscard]] std::vector<std::shared_ptr<Statement>> parse_statement_block() noexcept;
+
+    [[nodiscard]] std::string parse_variable_name() noexcept;
 
     [[nodiscard]] Position previous_position() const noexcept;
 
