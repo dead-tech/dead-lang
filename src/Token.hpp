@@ -89,6 +89,8 @@ class [[nodiscard]] Token {
             return Type::RETURN;
         } else if (lexeme == "while") {
             return Type::WHILE;
+        } else if (lexeme == "for") {
+            return Type::FOR;
         } else {
             return Type::END_OF_FILE;
         }
@@ -150,6 +152,9 @@ class [[nodiscard]] Token {
             }
             case Type::WHILE: {
                 return "while";
+            }
+            case Type::FOR: {
+                return "for";
             }
             default: {
                 return "not implemented";
