@@ -10,9 +10,7 @@ void Supervisor::push_error(const DLError &error) noexcept {
     m_errors.push_back(error);
 }
 
-void Supervisor::dump_errors_if_any() const {
-    if (!has_errors()) { return; }
-
+void Supervisor::dump_errors() const {
     for (const auto &error: m_errors) {
         print_error(error);
     }

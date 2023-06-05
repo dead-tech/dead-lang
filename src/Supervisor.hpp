@@ -19,7 +19,7 @@ public:
         m_errors.push_back(DLError::create(std::forward<Args>(args)...));
     }
 
-    void dump_errors_if_any() const;
+    void dump_errors() const;
 
     [[nodiscard]] constexpr bool has_errors() const noexcept { return !m_errors.empty(); }
 

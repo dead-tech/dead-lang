@@ -26,7 +26,10 @@ int main(int argc, char** argv) {
 
     const auto tokens = Lexer::lex(file_content.value(), supervisor);
 
-    supervisor->dump_errors_if_any();
+    if (supervisor->has_errors()) {
+        supervisor->dump_errors();
+        return 1;
+    }
 
 #if 0
     for (const auto& token: tokens) {
@@ -36,12 +39,11 @@ int main(int argc, char** argv) {
 
     const auto ast = Parser::parse(tokens, supervisor);
 
-    supervisor->dump_errors_if_any();
-
-    if (!supervisor->has_errors()) {
-        fmt::println("{}", ast->evaluate());
-        return 0;
+    if (supervisor->has_errors()) {
+        supervisor->dump_errors();
+        return 1;
     }
 
-    return 1;
+    fmt::println("{}", ast->evaluate());
+    return 0;
 }
