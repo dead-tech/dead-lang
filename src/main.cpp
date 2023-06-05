@@ -1,4 +1,47 @@
-#include <iostream>
+#define FMT_HEADER_ONLY
+#include <fmt/core.h>
+#include <fmt/color.h>
+#include <fmt/format.h>
 
-int main(int, char **) {
+#define FMT_FORMATTERS
+#include <dtsutil/filesystem.hpp>
+
+#include "Lexer.hpp"
+#include "Parser.hpp"
+#include "Supervisor.hpp"
+
+static void print_usage() {
+    fmt::println("usage: ./dead_lang <file.dl>");
+}
+
+int main(int argc, char** argv) {
+    if (argc < 2) { print_usage(); return 1;}
+
+    const auto file_content = dts::read_file(argv[1]);
+    if (!file_content.has_value()) {
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::red), "{}", file_content.error());
+    }
+
+    const auto supervisor = Supervisor::create(file_content.value());
+
+    const auto tokens = Lexer::lex(file_content.value(), supervisor);
+
+    supervisor->dump_errors_if_any();
+
+#if 0
+    for (const auto& token: tokens) {
+        fmt::println (stderr, "{}", token);
+    }
+#endif
+
+    const auto ast = Parser::parse(tokens, supervisor);
+
+    supervisor->dump_errors_if_any();
+
+    if (!supervisor->has_errors()) {
+        fmt::println("{}", ast->evaluate());
+        return 0;
+    }
+
+    return 1;
 }

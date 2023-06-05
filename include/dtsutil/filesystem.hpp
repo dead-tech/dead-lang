@@ -86,7 +86,7 @@ struct fmt::formatter<Error> {
         using Formatter =
           dts::detail::FilesystemErrorFormatter<std::decay_t<Error>>;
 
-        fmt::format_to(
+        return fmt::format_to(
           ctx.out(), "[ERROR] in `dts::read_file`: {}", Formatter::format(error)
         );
     }
