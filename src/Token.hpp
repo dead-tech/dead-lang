@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <sstream>
 #include <string>
 
@@ -81,7 +82,7 @@ class [[nodiscard]] Token {
 
     [[nodiscard]] constexpr bool matches(const Type& rhs_type) const noexcept { return m_type == rhs_type; }
 
-    [[nodiscard]] constexpr static Type is_keyword(const std::string& lexeme) noexcept {
+    [[nodiscard]] constexpr static std::optional<Type> is_keyword(const std::string& lexeme) noexcept {
         if (lexeme == "fn") {
             return Type::FN;
         } else if (lexeme == "if") {
@@ -94,9 +95,9 @@ class [[nodiscard]] Token {
             return Type::WHILE;
         } else if (lexeme == "for") {
             return Type::FOR;
-        } else {
-            return Type::END_OF_FILE;
         }
+
+        return {};
     }
 
 

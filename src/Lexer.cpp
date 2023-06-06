@@ -112,10 +112,8 @@ Token Lexer::lex_keyword_or_identifier() noexcept {
         }
     });
 
-    // FIXME: Investigate in this if-statement conditions
-    if (const auto keyword = Token::is_keyword(value);
-        keyword != Token::Type::IDENTIFIER && keyword != Token::Type::END_OF_FILE) {
-        return Token::create(keyword, std::move(value), Position::create(start, cursor()));
+    if (const auto keyword = Token::is_keyword(value); keyword.has_value()) {
+        return Token::create(*keyword, std::move(value), Position::create(start, cursor()));
     }
 
     return Token::create(Token::Type::IDENTIFIER, std::move(value), Position::create(start, cursor()));
