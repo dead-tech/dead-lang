@@ -1,9 +1,11 @@
 #pragma once
 
+#include <concepts>
 #include <expected>
 #include <memory>
 #include <vector>
 
+#include <dtsutil/iterator.hpp>
 #include <fmt/format.h>
 
 #include "Iterator.hpp"
@@ -38,6 +40,9 @@ class [[nodiscard]] Lexer : public Iterator<std::string> {
     [[nodiscard]] Token lex_single_quoted_string() noexcept;
 
     [[nodiscard]] Token lex_number() noexcept;
+
+    template<std::invocable<char> Callable>
+    void consume_chars(Callable&& callable) noexcept;
 
     std::shared_ptr<Supervisor> m_supervisor;
 };

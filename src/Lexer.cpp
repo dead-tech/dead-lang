@@ -86,16 +86,14 @@ Token Lexer::next_token() noexcept {
 }
 
 void Lexer::skip_whitespaces() noexcept {
-    while (!eof()) {
-        const auto ch = peek().value();
-
+    consume_chars([this](const auto& ch) {
         if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
             advance(1);
-            continue;
+            return dts::IteratorDecision::Continue;
         } else {
-            break;
+            return dts::IteratorDecision::Break;
         }
-    }
+    });
 }
 
 Token Lexer::lex_keyword_or_identifier() noexcept {
@@ -104,17 +102,17 @@ Token Lexer::lex_keyword_or_identifier() noexcept {
     if (std::isdigit(peek().value()) != 0) { return lex_number(); }
 
     std::string value;
-    while (!eof()) {
-        const auto ch = peek().value();
-
+    consume_chars([this, &value](const auto& ch) {
         if (std::isalnum(ch) != 0 || ch == '_') {
             value += ch;
             advance(1);
+            return dts::IteratorDecision::Continue;
         } else {
-            break;
+            return dts::IteratorDecision::Break;
         }
-    }
+    });
 
+    // FIXME: Investigate in this if-statement conditions
     if (const auto keyword = Token::is_keyword(value);
         keyword != Token::Type::IDENTIFIER && keyword != Token::Type::END_OF_FILE) {
         return Token::create(keyword, std::move(value), Position::create(start, cursor()));
@@ -202,16 +200,27 @@ Token Lexer::lex_number() noexcept {
     const auto start = cursor();
 
     std::string value;
-    while (!eof()) {
-        const auto ch = peek().value();
-
+    consume_chars([this, &value](const auto& ch) {
         if (std::isdigit(ch) != 0) {
             value += ch;
             advance(1);
+            return dts::IteratorDecision::Continue;
         } else {
-            break;
+            return dts::IteratorDecision::Break;
         }
-    }
+    });
 
     return Token::create(Token::Type::NUMBER, std::move(value), Position::create(start, cursor()));
+}
+
+template<std::invocable<char> Callable>
+void Lexer::consume_chars(Callable&& callable) noexcept {
+    while (!eof()) {
+        const auto iterator_decision = callable(*peek());
+        if (iterator_decision == dts::IteratorDecision::Break) {
+            break;
+        } else if (iterator_decision == dts::IteratorDecision::Continue) {
+            continue;
+        }
+    }
 }
