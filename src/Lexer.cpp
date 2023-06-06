@@ -241,6 +241,7 @@ Token Lexer::lex_double_quoted_string() noexcept {
     // Skip the ending double quote
     advance(1);
 
+    value = fmt::format("\"{}\"", value);
     return Token::create(Token::Type::DOUBLE_QUOTED_STRING, std::move(value), Position::create(start, cursor()));
 }
 

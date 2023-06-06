@@ -33,7 +33,9 @@ ModuleStatement::ModuleStatement(
 std::string ModuleStatement::evaluate() const noexcept {
     std::string c_module_code;
 
-    for (const auto& c_include : m_c_includes) { c_module_code += fmt::format("#include <{}>\n", c_include); }
+    for (const auto& c_include : m_c_includes) {
+        c_module_code += fmt::format("#include <{}>\n", c_include.substr(1, c_include.size() - 2));
+    }
 
     c_module_code += fmt::format("\n");
 
@@ -217,3 +219,9 @@ IndexOperatorStatement::IndexOperatorStatement(
 std::string IndexOperatorStatement::evaluate() const noexcept {
     return fmt::format("{}[{}] = {};", m_variable_name, m_index, m_expression);
 }
+
+FunctionCallStatement::FunctionCallStatement(std::string name, std::string args) noexcept
+  : m_name{ std::move(name) },
+    m_args{ std::move(args) } {}
+
+std::string FunctionCallStatement::evaluate() const noexcept { return fmt::format("{}({});", m_name, m_args); }

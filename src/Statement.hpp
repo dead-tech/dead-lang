@@ -196,3 +196,15 @@ class [[nodiscard]] IndexOperatorStatement final : public Statement {
     std::string m_index;
     std::string m_expression;
 };
+
+
+class [[nodiscard]] FunctionCallStatement final : public Statement {
+  public:
+    FunctionCallStatement(std::string name, std::string args) noexcept;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    std::string m_name;
+    std::string m_args;
+};

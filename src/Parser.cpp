@@ -193,6 +193,8 @@ std::shared_ptr<Statement> Parser::parse_return_statement() noexcept {
 }
 
 std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter) noexcept {
+    if (peek_ahead(1)->type() == Token::Type::LEFT_PAREN) { return parse_function_call_statement(); }
+
     const bool is_mutable = peek()->type() == Token::Type::MUT;
 
     // Skip the mut keyword if present
@@ -468,6 +470,28 @@ std::string Parser::parse_c_include_statement() noexcept {
     }
 
     return path->lexeme();
+}
+
+std::shared_ptr<Statement> Parser::parse_function_call_statement() noexcept {
+    const auto function_name = next()->lexeme();
+
+    // This should never be the case since we check for this left paren when
+    // entering this function but it's always good to check + we shift the cursor by doing so.
+    if (!matches_and_consume(Token::Type::LEFT_PAREN)) {
+        m_supervisor->push_error("expected '(' after function name while parsing", previous_position());
+        return nullptr;
+    }
+
+    std::string arguments;
+    consume_tokens_until(Token::Type::END_OF_LINE, [this, &arguments] { arguments.append(next()->lexeme()); });
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error("expected newline after function call while parsing", previous_position());
+        return nullptr;
+    }
+
+    return std::make_shared<FunctionCallStatement>(
+      FunctionCallStatement(function_name, arguments.substr(0, arguments.size() - 1))
+    );
 }
 
 std::string Parser::parse_expression(const Token::Type& delimiter) noexcept {
