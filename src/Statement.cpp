@@ -182,3 +182,16 @@ std::string ArrayStatement::evaluate() const noexcept {
       m_elements
     );
 }
+
+IndexOperatorStatement::IndexOperatorStatement(
+  std::string variable_name,
+  std::string index,
+  std::string expression
+) noexcept
+  : m_variable_name{ std::move(variable_name) },
+    m_index{ std::move(index) },
+    m_expression{ std::move(expression) } {}
+
+std::string IndexOperatorStatement::evaluate() const noexcept {
+    return fmt::format("{}[{}] = {};", m_variable_name, m_index, m_expression);
+}

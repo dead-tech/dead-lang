@@ -233,17 +233,19 @@ std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
 }
 
 std::shared_ptr<Statement> Parser::parse_variable_assignment() noexcept {
-    const std::string variable_name = next()->lexeme();
+    auto variable_name = next()->lexeme();
 
     if (const auto next_token = peek(); next_token && next_token->matches(Token::Type::PLUS_EQUAL)) {
-        return parse_plus_equal_statement(variable_name);
+        return parse_plus_equal_statement(std::move(variable_name));
+    } else if (next_token && next_token->matches(Token::Type::LEFT_BRACKET)) {
+        return parse_index_operator_statement(std::move(variable_name));
     }
 
     m_supervisor->push_error("INTERNAL ERROR: unsupported variable assignment operator", previous_position());
     return nullptr;
 }
 
-std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string& variable_name) noexcept {
+std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string&& variable_name) noexcept {
     // Skip the plus_equal token
     const auto plus_equal_token = next();
 
@@ -403,6 +405,39 @@ std::shared_ptr<Statement> Parser::parse_array_statement(
     return std::make_shared<ArrayStatement>(
       ArrayStatement(is_mutable, variable_type, type_extensions, variable_name, array_elements)
     );
+}
+
+std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::string&& variable_name) noexcept {
+    const auto left_bracket_token = next();
+
+    const auto index = parse_expression(Token::Type::RIGHT_BRACKET);
+    if (index.empty()) {
+        m_supervisor->push_error("expected index in index operator while parsing", left_bracket_token->position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::RIGHT_BRACKET)) {
+        m_supervisor->push_error("expected ']' after index operator while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::EQUAL)) {
+        m_supervisor->push_error("expected '=' after index operator while parsing", previous_position());
+        return nullptr;
+    }
+
+    const auto value = parse_expression(Token::Type::SEMICOLON);
+    if (value.empty()) {
+        m_supervisor->push_error("expected expression after index operator while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::SEMICOLON)) {
+        m_supervisor->push_error("expected ';' after index operator while parsing", previous_position());
+        return nullptr;
+    }
+
+    return std::make_shared<IndexOperatorStatement>(IndexOperatorStatement(variable_name, index, value));
 }
 
 std::string Parser::parse_expression(const Token::Type& delimiter) noexcept {

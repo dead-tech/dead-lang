@@ -176,3 +176,15 @@ class [[nodiscard]] ArrayStatement final : public Statement {
     std::string              m_name;
     std::string              m_elements;
 };
+
+class [[nodiscard]] IndexOperatorStatement final : public Statement {
+  public:
+    IndexOperatorStatement(std::string variable_name, std::string index, std::string expression) noexcept;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    std::string m_variable_name;
+    std::string m_index;
+    std::string m_expression;
+};
