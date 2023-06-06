@@ -13,16 +13,23 @@ Parser::Parser(std::vector<Token>&& tokens, const std::shared_ptr<Supervisor>& s
 std::shared_ptr<Statement> Parser::parse_module() noexcept {
     const std::string name = "main";
 
+    std::vector<std::string>                c_includes;
     std::vector<std::shared_ptr<Statement>> functions;
+
     while (!eof() && !m_supervisor->has_errors()) {
         if (eol()) {
             advance(1);
             continue;
         }
-        functions.push_back(parse_function_statement());
+
+        if (peek()->matches(Token::Type::C_INCLUDE)) {
+            c_includes.push_back(parse_c_include_statement());
+        } else {
+            functions.push_back(parse_function_statement());
+        }
     }
 
-    return std::make_shared<ModuleStatement>(name, BlockStatement(functions));
+    return std::make_shared<ModuleStatement>(name, c_includes, BlockStatement(functions));
 }
 
 std::shared_ptr<Statement> Parser::parse_function_statement() noexcept {
@@ -449,6 +456,18 @@ std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::str
     }
 
     return std::make_shared<IndexOperatorStatement>(IndexOperatorStatement(variable_name, index, value));
+}
+
+std::string Parser::parse_c_include_statement() noexcept {
+    const auto include_token = next();
+    const auto path          = next();
+
+    if (!path || !path->matches(Token::Type::DOUBLE_QUOTED_STRING)) {
+        m_supervisor->push_error("expected path after 'include' while parsing", include_token->position());
+        return "";
+    }
+
+    return path->lexeme();
 }
 
 std::string Parser::parse_expression(const Token::Type& delimiter) noexcept {

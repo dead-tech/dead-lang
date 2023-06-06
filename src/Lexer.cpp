@@ -83,6 +83,9 @@ Token Lexer::next_token() noexcept {
         case '\'': {
             return lex_single_quoted_string();
         }
+        case '"': {
+            return lex_double_quoted_string();
+        }
         default: {
             return lex_keyword_or_identifier();
         }
@@ -213,6 +216,32 @@ Token Lexer::lex_number() noexcept {
     });
 
     return Token::create(Token::Type::NUMBER, std::move(value), Position::create(start, cursor()));
+}
+
+Token Lexer::lex_double_quoted_string() noexcept {
+    const auto start = cursor();
+
+    // Skip the opening double quote
+    advance(1);
+
+    std::string value;
+    consume_chars([this, &value](const auto& ch) {
+        if (ch != '"') {
+            value += ch;
+            advance(1);
+            return dts::IteratorDecision::Continue;
+        } else if (ch == '\n') {
+            m_supervisor->push_error("unterminated double quoted string", Position::create(cursor(), cursor()));
+            return dts::IteratorDecision::Break;
+        }
+
+        return dts::IteratorDecision::Break;
+    });
+
+    // Skip the ending double quote
+    advance(1);
+
+    return Token::create(Token::Type::DOUBLE_QUOTED_STRING, std::move(value), Position::create(start, cursor()));
 }
 
 template<std::invocable<char> Callable>

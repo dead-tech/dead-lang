@@ -60,10 +60,12 @@ class [[nodiscard]] Token {
         TRUE,
         WHILE,
         MUT,
+        C_INCLUDE,
 
         // Literals
         IDENTIFIER,
         SINGLE_QUOTED_STRING,
+        DOUBLE_QUOTED_STRING,
         NUMBER,
 
         // Magic tokens
@@ -96,6 +98,8 @@ class [[nodiscard]] Token {
             return Type::WHILE;
         } else if (lexeme == "for") {
             return Type::FOR;
+        } else if (lexeme == "include") {
+            return Type::C_INCLUDE;
         }
 
         return {};
@@ -169,6 +173,15 @@ class [[nodiscard]] Token {
             }
             case Type::END_OF_LINE: {
                 return "eol";
+            }
+            case Type::C_INCLUDE: {
+                return "include";
+            }
+            case Type::SINGLE_QUOTED_STRING: {
+                return "single quoted string";
+            }
+            case Type::DOUBLE_QUOTED_STRING: {
+                return "double quoted string";
             }
             default: {
                 return "not implemented";

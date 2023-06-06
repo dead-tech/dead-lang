@@ -21,11 +21,26 @@ std::string BlockStatement::evaluate() const noexcept {
 
 auto BlockStatement::empty() const noexcept { return m_block.empty(); }
 
-ModuleStatement::ModuleStatement(std::string name, BlockStatement functions) noexcept
+ModuleStatement::ModuleStatement(
+  std::string              name,
+  std::vector<std::string> c_includes,
+  BlockStatement           functions
+) noexcept
   : m_name{ std::move(name) },
+    m_c_includes{ std::move(c_includes) },
     m_functions{ std::move(functions) } {}
 
-std::string ModuleStatement::evaluate() const noexcept { return m_functions.evaluate(); }
+std::string ModuleStatement::evaluate() const noexcept {
+    std::string c_module_code;
+
+    for (const auto& c_include : m_c_includes) { c_module_code += fmt::format("#include <{}>\n", c_include); }
+
+    c_module_code += fmt::format("\n");
+
+    c_module_code += m_functions.evaluate();
+
+    return c_module_code;
+}
 
 FunctionStatement::FunctionStatement(
   std::string    name,

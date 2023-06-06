@@ -55,6 +55,8 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] std::shared_ptr<Statement> parse_index_operator_statement(const std::string&& variable_name) noexcept;
 
+    [[nodiscard]] std::string parse_c_include_statement() noexcept;
+
     [[nodiscard]] std::string parse_expression(const Token::Type& delimiter) noexcept;
 
     [[nodiscard]] std::vector<std::shared_ptr<Statement>> parse_statement_block() noexcept;

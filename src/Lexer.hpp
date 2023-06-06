@@ -41,6 +41,8 @@ class [[nodiscard]] Lexer : public Iterator<std::string> {
 
     [[nodiscard]] Token lex_number() noexcept;
 
+    [[nodiscard]] Token lex_double_quoted_string() noexcept;
+
     template<std::invocable<char> Callable>
     void consume_chars(Callable&& callable) noexcept;
 
