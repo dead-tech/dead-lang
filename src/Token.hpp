@@ -67,6 +67,7 @@ class [[nodiscard]] Token {
         NUMBER,
 
         // Magic tokens
+        END_OF_LINE,
         END_OF_FILE
     };
 
@@ -165,6 +166,9 @@ class [[nodiscard]] Token {
             }
             case Type::RIGHT_BRACKET: {
                 return "]";
+            }
+            case Type::END_OF_LINE: {
+                return "eol";
             }
             default: {
                 return "not implemented";

@@ -29,6 +29,13 @@ class [[nodiscard]] Statement {
     [[nodiscard]] virtual std::string evaluate() const noexcept = 0;
 };
 
+class [[nodiscard]] EmptyStatement final : public Statement {
+  public:
+    EmptyStatement() noexcept = default;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+};
+
 class [[nodiscard]] BlockStatement final : public Statement {
   public:
     explicit BlockStatement(std::vector<std::shared_ptr<Statement>> block) noexcept;

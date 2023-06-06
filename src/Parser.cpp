@@ -14,7 +14,13 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept {
     const std::string name = "main";
 
     std::vector<std::shared_ptr<Statement>> functions;
-    while (!eof() && !m_supervisor->has_errors()) { functions.push_back(parse_function_statement()); }
+    while (!eof() && !m_supervisor->has_errors()) {
+        if (eol()) {
+            advance(1);
+            continue;
+        }
+        functions.push_back(parse_function_statement());
+    }
 
     return std::make_shared<ModuleStatement>(name, BlockStatement(functions));
 }
@@ -25,7 +31,7 @@ std::shared_ptr<Statement> Parser::parse_function_statement() noexcept {
 
     const auto name = next();
     if (!name || !name->matches(Token::Type::IDENTIFIER)) {
-        m_supervisor->push_error("expected function name after 'fn' keyword while parsing", previous()->position());
+        m_supervisor->push_error("expected function name after 'fn' keyword while parsing", fn_token->position());
         return nullptr;
     }
 
@@ -40,7 +46,7 @@ std::shared_ptr<Statement> Parser::parse_function_statement() noexcept {
 
     // Skip the right paren
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
-        m_supervisor->push_error("expected ')' after return type while parsing", fn_token->position());
+        m_supervisor->push_error("expected ')' after args while parsing", fn_token->position());
         return nullptr;
     }
 
@@ -61,6 +67,12 @@ std::shared_ptr<Statement> Parser::parse_function_statement() noexcept {
     // Skip the left brace
     if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
         m_supervisor->push_error("expected '{' after function return type while parsing", previous_position());
+        return nullptr;
+    }
+
+    // Skip the newline
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error("expected newline after function return type while parsing", previous_position());
         return nullptr;
     }
 
@@ -94,6 +106,10 @@ std::shared_ptr<Statement> Parser::parse_statement() noexcept {
         case Token::Type::FOR: {
             return parse_for_statement();
         }
+        case Token::Type::END_OF_LINE: {
+            advance(1);
+            return std::make_shared<EmptyStatement>();
+        }
         default: {
             return parse_expression_statement();
         }
@@ -112,8 +128,13 @@ std::shared_ptr<Statement> Parser::parse_if_statement() noexcept {
 
     // Parse condition
     const auto condition = parse_expression(Token::Type::RIGHT_PAREN);
-    if (!matches_and_consume(Token::Type::RIGHT_PAREN) || condition.empty()) {
-        m_supervisor->push_error("expected expression while parsing if statement condition", if_token->position());
+    if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
+        m_supervisor->push_error("expected ')' while parsing if statement condition", previous_position());
+        return nullptr;
+    }
+
+    if (condition.empty()) {
+        m_supervisor->push_error("expected expression while parsing if statement condition", previous_position());
         return nullptr;
     }
 
@@ -148,28 +169,29 @@ std::shared_ptr<Statement> Parser::parse_return_statement() noexcept {
     const auto return_token = next();
 
     // Parse expression
-    const auto expression = parse_expression(Token::Type::SEMICOLON);
-    if (expression.empty()) {
-        m_supervisor->push_error("expected expression after return keyword while parsing", previous_position());
+    const auto expression = parse_expression(Token::Type::END_OF_LINE);
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error(
+          "expected newline after return statement's expression while parsing", return_token->position()
+        );
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::SEMICOLON)) {
-        m_supervisor->push_error(
-          "expected ';' after return statement's expression while parsing", return_token->position()
-        );
+    if (expression.empty()) {
+        m_supervisor->push_error("expected expression after return keyword while parsing", return_token->position());
         return nullptr;
     }
 
     return std::make_shared<ReturnStatement>(ReturnStatement(expression));
 }
 
-std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
+std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter) noexcept {
     const bool is_mutable = peek()->type() == Token::Type::MUT;
 
     // Skip the mut keyword if present
     if (is_mutable) { advance(1); }
 
+    // FIXME: This logic is garbage
     const auto variable_type = Typechecker::builtin_type_from_string(peek()->lexeme());
     if (variable_type == Typechecker::BuiltinType::NONE) { return parse_variable_assignment(); }
 
@@ -178,6 +200,9 @@ std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
 
     std::string type_extensions;
     consume_tokens_until(Token::Type::IDENTIFIER, [this, &type_extensions] {
+        if (eol()) {
+            m_supervisor->push_error("expected variable name after variable type while parsing", previous_position());
+        }
         type_extensions.append(next()->lexeme());
     });
 
@@ -187,15 +212,6 @@ std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
     }
 
     const std::string variable_name = parse_variable_name();
-    //    const auto variable_name_token = next();
-    //    if (!variable_name_token || !variable_name_token->matches(Token::Type::IDENTIFIER)) {
-    //        m_supervisor->push_error(
-    //                "expected variable name after variable type while parsing", peek_behind(2)->position()
-    //        );
-    //        return nullptr;
-    //    }
-    //
-    //    variable_name = variable_name_token->lexeme();
 
     // Skip equal sign
     const auto equal_token = peek();
@@ -204,15 +220,7 @@ std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
         return nullptr;
     }
 
-    // FIXME: parse_expression eats until it finds a semicolon but consider this error case:
-    //      {
-    //          i32 name =
-    //      }
-    //      return 0;
-    // In this case the expression will be }return0 and it will also match the semicolon afterwards so no error;
-    // What about this?
-    // It will still fail because other things fail to parse, though it does not report the correct error message
-    const auto expression = parse_expression(Token::Type::SEMICOLON);
+    const auto expression = parse_expression(ending_delimiter);
     if (expression.empty()) {
         m_supervisor->push_error(
           "expected expression after '=' in variable declaration while parsing", equal_token->position()
@@ -220,9 +228,9 @@ std::shared_ptr<Statement> Parser::parse_variable_statement() noexcept {
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::SEMICOLON)) {
+    if (!matches_and_consume(ending_delimiter)) {
         m_supervisor->push_error(
-          "expected ';' after expression in variable declaration while parsing", equal_token->position()
+          "expected ';' or newline after expression in variable declaration while parsing", equal_token->position()
         );
         return nullptr;
     }
@@ -249,7 +257,7 @@ std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string&
     // Skip the plus_equal token
     const auto plus_equal_token = next();
 
-    const auto expression = parse_expression(Token::Type::SEMICOLON);
+    const auto expression = parse_expression(Token::Type::END_OF_LINE);
     if (expression.empty()) {
         m_supervisor->push_error(
           "expected expression after '+=' in variable assignment while parsing", plus_equal_token->position()
@@ -257,7 +265,7 @@ std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string&
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::SEMICOLON)) {
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
         m_supervisor->push_error(
           "expected ';' after expression in variable assignment while parsing", previous_position()
         );
@@ -278,17 +286,18 @@ std::shared_ptr<Statement> Parser::parse_while_statement() noexcept {
 
     // Parse condition
     const auto condition = parse_expression(Token::Type::RIGHT_PAREN);
-    if (condition.empty()) {
-        m_supervisor->push_error("expected expression while parsing while-loop condition", while_token->position());
-        return nullptr;
-    }
-
-    // Skip the right paren and the left brace
+    // Skip the right paren
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
         m_supervisor->push_error("expected ')' after while-loop condition while parsing", while_token->position());
         return nullptr;
     }
 
+    if (condition.empty()) {
+        m_supervisor->push_error("expected expression while parsing while-loop condition", while_token->position());
+        return nullptr;
+    }
+
+    // Skip the left brace
     if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
         m_supervisor->push_error("expected '{' after while-loop condition while parsing", previous_position());
         return nullptr;
@@ -314,7 +323,7 @@ std::shared_ptr<Statement> Parser::parse_for_statement() noexcept {
     }
 
     // Parse initializer
-    const auto initializer = parse_variable_statement();
+    const auto initializer = parse_variable_statement(Token::Type::SEMICOLON);
     if (!initializer) {
         m_supervisor->push_error(
           "expected variable declaration while parsing for-loop initializer", for_token->position()
@@ -324,19 +333,21 @@ std::shared_ptr<Statement> Parser::parse_for_statement() noexcept {
 
     // Parse condition
     const auto condition = parse_expression(Token::Type::SEMICOLON);
-
-    // Skip the semicolon
-    if (!matches_and_consume(Token::Type::SEMICOLON)) {
-        m_supervisor->push_error("expected ';' after for-loop condition while parsing", previous_position());
+    if (condition.empty()) {
+        m_supervisor->push_error("expected expression while parsing for-loop condition", for_token->position());
         return nullptr;
     }
 
     // Parse increment
     const auto increment = parse_expression(Token::Type::RIGHT_PAREN);
-
     // Skip the right paren
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
         m_supervisor->push_error("expected ')' after for-loop increment while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (increment.empty()) {
+        m_supervisor->push_error("expected expression while parsing for-loop increment", for_token->position());
         return nullptr;
     }
 
@@ -358,15 +369,15 @@ std::shared_ptr<Statement> Parser::parse_for_statement() noexcept {
 }
 
 std::shared_ptr<Statement> Parser::parse_expression_statement() noexcept {
-    const auto expression = parse_expression(Token::Type::SEMICOLON);
+    const auto expression = parse_expression(Token::Type::END_OF_LINE);
     if (expression.empty()) {
         m_supervisor->push_error("expected expression while parsing expression statement", previous_position());
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::SEMICOLON)) {
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
         m_supervisor->push_error(
-          "expected ';' after expression while parsing expression statement", previous_position()
+          "expected newline after expression while parsing expression statement", previous_position()
         );
         return nullptr;
     }
@@ -397,8 +408,8 @@ std::shared_ptr<Statement> Parser::parse_array_statement(
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::SEMICOLON)) {
-        m_supervisor->push_error("expected ';' after array declaration while parsing", previous_position());
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error("expected newline after array declaration while parsing", previous_position());
         return nullptr;
     }
 
@@ -411,13 +422,13 @@ std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::str
     const auto left_bracket_token = next();
 
     const auto index = parse_expression(Token::Type::RIGHT_BRACKET);
-    if (index.empty()) {
-        m_supervisor->push_error("expected index in index operator while parsing", left_bracket_token->position());
+    if (!matches_and_consume(Token::Type::RIGHT_BRACKET)) {
+        m_supervisor->push_error("expected ']' after index operator while parsing", previous_position());
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::RIGHT_BRACKET)) {
-        m_supervisor->push_error("expected ']' after index operator while parsing", previous_position());
+    if (index.empty()) {
+        m_supervisor->push_error("expected index in index operator while parsing", left_bracket_token->position());
         return nullptr;
     }
 
@@ -426,14 +437,14 @@ std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::str
         return nullptr;
     }
 
-    const auto value = parse_expression(Token::Type::SEMICOLON);
+    const auto value = parse_expression(Token::Type::END_OF_LINE);
     if (value.empty()) {
         m_supervisor->push_error("expected expression after index operator while parsing", previous_position());
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::SEMICOLON)) {
-        m_supervisor->push_error("expected ';' after index operator while parsing", previous_position());
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error("expected newline after index operator while parsing", previous_position());
         return nullptr;
     }
 
@@ -442,15 +453,16 @@ std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::str
 
 std::string Parser::parse_expression(const Token::Type& delimiter) noexcept {
     std::string expression;
-    consume_tokens_until(delimiter, [this, &expression] { expression.append(next()->lexeme()); });
-
+    while (!peek()->matches(delimiter)) {
+        if (eol() || eof() || m_supervisor->has_errors()) { return ""; }
+        expression.append(next()->lexeme());
+    }
     return expression;
 }
 
 std::vector<std::shared_ptr<Statement>> Parser::parse_statement_block() noexcept {
     std::vector<std::shared_ptr<Statement>> block;
     consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &block] { block.push_back(parse_statement()); });
-
     return block;
 }
 
@@ -482,3 +494,5 @@ bool Parser::matches_and_consume(const Token::Type& delimiter) noexcept {
     advance(1);
     return true;
 }
+
+bool Parser::eol() const noexcept { return peek()->matches(Token::Type::END_OF_LINE); }

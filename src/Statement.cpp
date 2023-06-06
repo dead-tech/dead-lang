@@ -3,12 +3,19 @@
 #include <fmt/format.h>
 #include <utility>
 
+std::string EmptyStatement::evaluate() const noexcept { return ""; }
+
 BlockStatement::BlockStatement(std::vector<std::shared_ptr<Statement>> block) noexcept
   : m_block{ std::move(block) } {}
 
 std::string BlockStatement::evaluate() const noexcept {
     return std::accumulate(m_block.begin(), m_block.end(), std::string{}, [](const auto& acc, const auto& statement) {
-        return acc + statement->evaluate() + "\n";
+        // check if statement is EmptyStatement
+        if (const auto empty_statement = std::dynamic_pointer_cast<EmptyStatement>(statement); empty_statement) {
+            return acc + statement->evaluate();
+        } else {
+            return acc + statement->evaluate() + "\n";
+        }
     });
 }
 
@@ -145,7 +152,7 @@ ForStatement::ForStatement(
 std::string ForStatement::evaluate() const noexcept {
     std::string c_for_code;
 
-    c_for_code += "for (" + m_init_statement->evaluate() + " " + m_condition + "; " + m_increment_statement + ") {\n";
+    c_for_code += "for (" + m_init_statement->evaluate() + " " + m_condition + m_increment_statement + ") {\n";
     c_for_code += m_body.evaluate();
     c_for_code += "}\n";
 

@@ -25,6 +25,10 @@ Token Lexer::next_token() noexcept {
 
     const auto ch = peek().value();
     switch (ch) {
+        case '\n': {
+            advance(1);
+            return Token::create(Token::Type::END_OF_LINE, "\n", Position::create(cursor(), cursor()));
+        }
         case '(': {
             advance(1);
             return Token::create(Token::Type::LEFT_PAREN, "(", Position::create(cursor(), cursor()));
@@ -87,7 +91,7 @@ Token Lexer::next_token() noexcept {
 
 void Lexer::skip_whitespaces() noexcept {
     consume_chars([this](const auto& ch) {
-        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
+        if (ch == ' ' || ch == '\t' || ch == '\r') {
             advance(1);
             return dts::IteratorDecision::Continue;
         } else {

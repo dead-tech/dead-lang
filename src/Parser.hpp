@@ -34,7 +34,8 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] std::shared_ptr<Statement> parse_return_statement() noexcept;
 
-    [[nodiscard]] std::shared_ptr<Statement> parse_variable_statement() noexcept;
+    [[nodiscard]] std::shared_ptr<Statement>
+      parse_variable_statement(const Token::Type& ending_delimiter = Token::Type::END_OF_LINE) noexcept;
 
     [[nodiscard]] std::shared_ptr<Statement> parse_variable_assignment() noexcept;
 
@@ -66,6 +67,8 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
     void consume_tokens_until(const Token::Type& delimiter, Callable&& callable) noexcept;
 
     [[nodiscard]] bool matches_and_consume(const Token::Type& delimiter) noexcept;
+
+    [[nodiscard]] bool eol() const noexcept;
 
     std::shared_ptr<Supervisor> m_supervisor;
 };
