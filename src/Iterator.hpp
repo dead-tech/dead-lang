@@ -4,13 +4,15 @@
 
 template<typename Iterable>
 class [[nodiscard]] Iterator {
-    static_assert(std::is_same_v<typename Iterable::value_type, typename Iterable::value_type>,
-                  "Iterable must be a container and specify a value_type");
+    static_assert(
+      std::is_same_v<typename Iterable::value_type, typename Iterable::value_type>,
+      "Iterable must be a container and specify a value_type"
+    );
 
-protected:
+  protected:
     using value_type = typename Iterable::value_type;
 
-    explicit Iterator(const Iterable &data) noexcept;
+    explicit Iterator(const Iterable& data) noexcept;
 
     [[nodiscard]] bool eof() const noexcept;
 
@@ -22,6 +24,8 @@ protected:
 
     std::optional<value_type> peek_behind(const std::size_t offset) const noexcept;
 
+    std::optional<value_type> peek_at(const std::size_t index) const noexcept;
+
     std::optional<value_type> previous() const noexcept;
 
     void advance(const std::size_t offset) noexcept;
@@ -29,13 +33,14 @@ protected:
     [[nodiscard]] std::size_t cursor() const noexcept;
 
 
-private:
-    Iterable m_data;
+  private:
+    Iterable    m_data;
     std::size_t m_cursor = 0;
 };
 
 template<typename Iterable>
-Iterator<Iterable>::Iterator(const Iterable &data) noexcept : m_data{data} {}
+Iterator<Iterable>::Iterator(const Iterable& data) noexcept
+  : m_data{ data } {}
 
 
 template<typename Iterable>
@@ -44,8 +49,7 @@ bool Iterator<Iterable>::eof() const noexcept {
 }
 
 template<typename Iterable>
-std::optional<typename Iterator<Iterable>::value_type>
-Iterator<Iterable>::next() noexcept {
+std::optional<typename Iterator<Iterable>::value_type> Iterator<Iterable>::next() noexcept {
     if (eof()) { return {}; }
     return m_data[m_cursor++];
 }
@@ -57,8 +61,8 @@ std::optional<typename Iterator<Iterable>::value_type> Iterator<Iterable>::peek(
 }
 
 template<typename Iterable>
-std::optional<typename Iterator<Iterable>::value_type>
-Iterator<Iterable>::peek_ahead(const std::size_t offset) const noexcept {
+std::optional<typename Iterator<Iterable>::value_type> Iterator<Iterable>::peek_ahead(const std::size_t offset
+) const noexcept {
     if (m_cursor + offset >= m_data.size()) { return {}; }
     return m_data[m_cursor + offset];
 }
@@ -74,15 +78,20 @@ std::size_t Iterator<Iterable>::cursor() const noexcept {
 }
 
 template<typename Iterable>
-std::optional<typename Iterator<Iterable>::value_type>
-Iterator<Iterable>::peek_behind(const std::size_t offset) const noexcept {
+std::optional<typename Iterator<Iterable>::value_type> Iterator<Iterable>::peek_behind(const std::size_t offset
+) const noexcept {
     if (m_cursor - offset >= m_data.size()) { return {}; }
     return m_data[m_cursor - offset];
 }
 
+template<typename Iterable>
+std::optional<typename Iterator<Iterable>::value_type> Iterator<Iterable>::peek_at(const std::size_t index
+) const noexcept {
+    if (index >= m_data.size()) { return {}; }
+    return m_data[index];
+}
 
 template<typename Iterable>
-std::optional<typename Iterator<Iterable>::value_type>
-Iterator<Iterable>::previous() const noexcept {
+std::optional<typename Iterator<Iterable>::value_type> Iterator<Iterable>::previous() const noexcept {
     return peek_behind(1);
 }
