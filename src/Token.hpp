@@ -27,8 +27,11 @@ class [[nodiscard]] Token {
         SLASH,
         STAR,
         AMPERSAND,
+        COLON,
 
         // Multi-character tokens
+        COLON_COLON,
+
         // Comparison
         BANG,
         BANG_EQUAL,
@@ -185,6 +188,15 @@ class [[nodiscard]] Token {
             }
             case Type::DOUBLE_QUOTED_STRING: {
                 return "double quoted string";
+            }
+            case Type::STRUCT: {
+                return "struct";
+            }
+            case Type::COLON: {
+                return ":";
+            }
+            case Type::COLON_COLON: {
+                return "::";
             }
             default: {
                 return "not implemented";

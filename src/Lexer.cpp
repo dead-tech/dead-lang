@@ -86,6 +86,9 @@ Token Lexer::next_token() noexcept {
         case '"': {
             return lex_double_quoted_string();
         }
+        case ':': {
+            return lex_colon();
+        }
         default: {
             return lex_keyword_or_identifier();
         }
@@ -243,6 +246,18 @@ Token Lexer::lex_double_quoted_string() noexcept {
 
     value = fmt::format("\"{}\"", value);
     return Token::create(Token::Type::DOUBLE_QUOTED_STRING, std::move(value), Position::create(start, cursor()));
+}
+
+Token Lexer::lex_colon() noexcept {
+    const auto start = cursor();
+
+    if (auto ch = peek_ahead(1); ch == ':') {
+        advance(2);
+        return Token::create(Token::Type::COLON_COLON, "::", Position::create(start, cursor()));
+    }
+
+    advance(1);
+    return Token::create(Token::Type::COLON, ":", Position::create(start, cursor()));
 }
 
 template<std::invocable<char> Callable>
