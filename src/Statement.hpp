@@ -44,20 +44,29 @@ class [[nodiscard]] BlockStatement final : public Statement {
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
+    void append(const std::shared_ptr<Statement>& statement) noexcept;
+
   private:
     std::vector<std::shared_ptr<Statement>> m_block;
 };
 
 class [[nodiscard]] ModuleStatement final : public Statement {
   public:
-    ModuleStatement(
-      std::string              name,
-      std::vector<std::string> c_includes,
-      BlockStatement           structs,
-      BlockStatement           functions
-    ) noexcept;
+    explicit ModuleStatement(std::string name) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
+
+    [[nodiscard]] auto& c_includes() noexcept { return m_c_includes; }
+
+    [[nodiscard]] const auto& c_includes() const noexcept { return m_c_includes; }
+
+    [[nodiscard]] auto& structs() noexcept { return m_structs; }
+
+    [[nodiscard]] auto& functions() noexcept { return m_functions; }
+
+    [[nodiscard]] const auto& structs() const noexcept { return m_structs; }
+
+    [[nodiscard]] const auto& functions() const noexcept { return m_functions; }
 
   private:
     std::string              m_name;

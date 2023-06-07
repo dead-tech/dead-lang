@@ -78,5 +78,6 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] bool eol() const noexcept;
 
-    std::shared_ptr<Supervisor> m_supervisor;
+    std::shared_ptr<Supervisor>      m_supervisor;
+    std::shared_ptr<ModuleStatement> m_current_module;
 };

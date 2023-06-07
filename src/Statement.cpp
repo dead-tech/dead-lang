@@ -21,16 +21,12 @@ std::string BlockStatement::evaluate() const noexcept {
 
 auto BlockStatement::empty() const noexcept { return m_block.empty(); }
 
-ModuleStatement::ModuleStatement(
-  std::string              name,
-  std::vector<std::string> c_includes,
-  BlockStatement           structs,
-  BlockStatement           functions
-) noexcept
+void BlockStatement::append(const std::shared_ptr<Statement>& statement) noexcept { m_block.push_back(statement); }
+
+ModuleStatement::ModuleStatement(std::string name) noexcept
   : m_name{ std::move(name) },
-    m_c_includes{ std::move(c_includes) },
-    m_structs{ std::move(structs) },
-    m_functions{ std::move(functions) } {}
+    m_structs{ {} },
+    m_functions{ {} } {}
 
 std::string ModuleStatement::evaluate() const noexcept {
     std::string c_module_code;

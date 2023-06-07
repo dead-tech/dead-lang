@@ -13,9 +13,13 @@ Parser::Parser(std::vector<Token>&& tokens, const std::shared_ptr<Supervisor>& s
 std::shared_ptr<Statement> Parser::parse_module() noexcept {
     const std::string name = "main";
 
-    std::vector<std::string>                c_includes;
-    std::vector<std::shared_ptr<Statement>> structs;
-    std::vector<std::shared_ptr<Statement>> functions;
+    const auto modul = std::make_shared<ModuleStatement>(name);
+
+    auto& c_includes = modul->c_includes();
+    auto& structs    = modul->structs();
+    auto& functions  = modul->functions();
+
+    m_current_module = modul;
 
     while (!eof() && !m_supervisor->has_errors()) {
         if (eol()) {
@@ -26,13 +30,13 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept {
         if (peek()->matches(Token::Type::C_INCLUDE)) {
             c_includes.push_back(parse_c_include_statement());
         } else if (peek()->matches(Token::Type::STRUCT)) {
-            structs.push_back(parse_struct_statement());
+            structs.append(parse_struct_statement());
         } else {
-            functions.push_back(parse_function_statement());
+            functions.append(parse_function_statement());
         }
     }
 
-    return std::make_shared<ModuleStatement>(name, c_includes, BlockStatement(structs), BlockStatement(functions));
+    return modul;
 }
 
 std::shared_ptr<Statement> Parser::parse_function_statement() noexcept {
