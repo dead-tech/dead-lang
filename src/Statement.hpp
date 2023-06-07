@@ -50,13 +50,19 @@ class [[nodiscard]] BlockStatement final : public Statement {
 
 class [[nodiscard]] ModuleStatement final : public Statement {
   public:
-    ModuleStatement(std::string name, std::vector<std::string> c_includes, BlockStatement functions) noexcept;
+    ModuleStatement(
+      std::string              name,
+      std::vector<std::string> c_includes,
+      BlockStatement           structs,
+      BlockStatement           functions
+    ) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
     std::string              m_name;
     std::vector<std::string> m_c_includes;
+    BlockStatement           m_structs;
     BlockStatement           m_functions;
 };
 
@@ -207,4 +213,15 @@ class [[nodiscard]] FunctionCallStatement final : public Statement {
   private:
     std::string m_name;
     std::string m_args;
+};
+
+class [[nodiscard]] StructStatement final : public Statement {
+  public:
+    StructStatement(std::string name, std::vector<std::string> member_variables) noexcept;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    std::string              m_name;
+    std::vector<std::string> m_member_variables;
 };

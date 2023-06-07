@@ -24,10 +24,12 @@ auto BlockStatement::empty() const noexcept { return m_block.empty(); }
 ModuleStatement::ModuleStatement(
   std::string              name,
   std::vector<std::string> c_includes,
+  BlockStatement           structs,
   BlockStatement           functions
 ) noexcept
   : m_name{ std::move(name) },
     m_c_includes{ std::move(c_includes) },
+    m_structs{ std::move(structs) },
     m_functions{ std::move(functions) } {}
 
 std::string ModuleStatement::evaluate() const noexcept {
@@ -36,8 +38,10 @@ std::string ModuleStatement::evaluate() const noexcept {
     for (const auto& c_include : m_c_includes) {
         c_module_code += fmt::format("#include <{}>\n", c_include.substr(1, c_include.size() - 2));
     }
+    c_module_code += "\n";
 
-    c_module_code += fmt::format("\n");
+    c_module_code += m_structs.evaluate();
+    c_module_code += "\n";
 
     c_module_code += m_functions.evaluate();
 
@@ -225,3 +229,20 @@ FunctionCallStatement::FunctionCallStatement(std::string name, std::string args)
     m_args{ std::move(args) } {}
 
 std::string FunctionCallStatement::evaluate() const noexcept { return fmt::format("{}({});", m_name, m_args); }
+
+
+StructStatement::StructStatement(std::string name, std::vector<std::string> member_variables) noexcept
+  : m_name{ std::move(name) },
+    m_member_variables{ std::move(member_variables) } {}
+
+std::string StructStatement::evaluate() const noexcept {
+    std::string c_struct_code;
+
+    c_struct_code += "typedef struct " + m_name + " {\n";
+    for (const auto& member_variable : m_member_variables) {
+        c_struct_code += fmt::format("    {};\n", member_variable);
+    }
+    c_struct_code += fmt::format("}} {};\n", m_name);
+
+    return c_struct_code;
+}

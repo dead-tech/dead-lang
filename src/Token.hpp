@@ -61,6 +61,7 @@ class [[nodiscard]] Token {
         WHILE,
         MUT,
         C_INCLUDE,
+        STRUCT,
 
         // Literals
         IDENTIFIER,
@@ -70,7 +71,7 @@ class [[nodiscard]] Token {
 
         // Magic tokens
         END_OF_LINE,
-        END_OF_FILE
+        END_OF_FILE,
     };
 
     [[nodiscard]] static Token create(Type type, std::string lexeme, Position position) noexcept;
@@ -100,6 +101,8 @@ class [[nodiscard]] Token {
             return Type::FOR;
         } else if (lexeme == "include") {
             return Type::C_INCLUDE;
+        } else if (lexeme == "struct") {
+            return Type::STRUCT;
         }
 
         return {};

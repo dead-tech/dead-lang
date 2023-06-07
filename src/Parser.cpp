@@ -14,6 +14,7 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept {
     const std::string name = "main";
 
     std::vector<std::string>                c_includes;
+    std::vector<std::shared_ptr<Statement>> structs;
     std::vector<std::shared_ptr<Statement>> functions;
 
     while (!eof() && !m_supervisor->has_errors()) {
@@ -24,12 +25,14 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept {
 
         if (peek()->matches(Token::Type::C_INCLUDE)) {
             c_includes.push_back(parse_c_include_statement());
+        } else if (peek()->matches(Token::Type::STRUCT)) {
+            structs.push_back(parse_struct_statement());
         } else {
             functions.push_back(parse_function_statement());
         }
     }
 
-    return std::make_shared<ModuleStatement>(name, c_includes, BlockStatement(functions));
+    return std::make_shared<ModuleStatement>(name, c_includes, BlockStatement(structs), BlockStatement(functions));
 }
 
 std::shared_ptr<Statement> Parser::parse_function_statement() noexcept {
@@ -220,7 +223,7 @@ std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& e
         return parse_array_statement(is_mutable, variable_type, type_extensions);
     }
 
-    const std::string variable_name = parse_variable_name();
+    const std::string variable_name = parse_identifier();
 
     // Skip equal sign
     const auto equal_token = peek();
@@ -399,7 +402,7 @@ std::shared_ptr<Statement> Parser::parse_array_statement(
   const Typechecker::BuiltinType& variable_type,
   const std::string&              type_extensions
 ) noexcept {
-    const auto variable_name = parse_variable_name();
+    const auto variable_name = parse_identifier();
 
     if (!matches_and_consume(Token::Type::EQUAL)) {
         m_supervisor->push_error("expected '=' after array declaration while parsing", previous_position());
@@ -476,7 +479,7 @@ std::shared_ptr<Statement> Parser::parse_function_call_statement() noexcept {
     const auto function_name = next()->lexeme();
 
     // This should never be the case since we check for this left paren when
-    // entering this function but it's always good to check + we shift the cursor by doing so.
+    // entering this function, but it's always good to check + we shift the cursor by doing so.
     if (!matches_and_consume(Token::Type::LEFT_PAREN)) {
         m_supervisor->push_error("expected '(' after function name while parsing", previous_position());
         return nullptr;
@@ -494,6 +497,37 @@ std::shared_ptr<Statement> Parser::parse_function_call_statement() noexcept {
     );
 }
 
+std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept {
+    const auto struct_token = next();
+
+    const auto struct_name = parse_identifier();
+    if (struct_name.empty()) { return nullptr; }
+
+    if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
+        m_supervisor->push_error("expected '{' after struct name while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error("expected newline after '{' in struct declaration while parsing", previous_position());
+        return nullptr;
+    }
+
+    const std::vector<std::string> member_variables = parse_member_variables();
+
+    if (!matches_and_consume(Token::Type::RIGHT_BRACE)) {
+        m_supervisor->push_error("expected '}' after struct body while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error("expected newline after struct declaration while parsing", previous_position());
+        return nullptr;
+    }
+
+    return std::make_shared<StructStatement>(StructStatement(struct_name, member_variables));
+}
+
 std::string Parser::parse_expression(const Token::Type& delimiter) noexcept {
     std::string expression;
     while (!peek()->matches(delimiter)) {
@@ -509,16 +543,40 @@ std::vector<std::shared_ptr<Statement>> Parser::parse_statement_block() noexcept
     return block;
 }
 
-std::string Parser::parse_variable_name() noexcept {
-    const auto variable_name_token = next();
-    if (!variable_name_token || !variable_name_token->matches(Token::Type::IDENTIFIER)) {
+std::string Parser::parse_identifier() noexcept {
+    const auto identifier = next();
+    if (!identifier || !identifier->matches(Token::Type::IDENTIFIER)) {
+        const auto previous_token = peek_behind(2);
         m_supervisor->push_error(
-          "expected variable name after variable type while parsing", peek_behind(2)->position()
+          fmt::format("expected identifier after '{}' while parsing", previous_token->lexeme()),
+          previous_token->position()
         );
         return "";
     }
 
-    return variable_name_token->lexeme();
+    return identifier->lexeme();
+}
+
+std::vector<std::string> Parser::parse_member_variables() noexcept {
+    std::vector<std::string> member_variables;
+    std::size_t              it = 0;
+    while (!eof()) {
+        if (peek()->matches(Token::Type::END_OF_LINE)) {
+            ++it;
+            next();
+            continue;
+        } else if (peek()->matches(Token::Type::RIGHT_BRACE)) {
+            break;
+        }
+
+        if (member_variables.size() <= it) {
+            member_variables.push_back(next()->lexeme() + " ");
+        } else {
+            member_variables[it].append(next()->lexeme());
+        }
+    }
+
+    return member_variables;
 }
 
 Position Parser::previous_position() const noexcept { return previous().value_or(Token::create_dumb()).position(); }
