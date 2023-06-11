@@ -112,9 +112,7 @@ std::shared_ptr<Statement> Parser::parse_statement() noexcept {
         }
         case Token::Type::MUT:
         case Token::Type::IDENTIFIER: {
-            if (const auto lparen = peek_ahead(1); lparen && lparen->matches(Token::Type::LEFT_PAREN)) {
-                return parse_expression_statement();
-            }
+            if (identifier_is_function_call()) { return parse_expression_statement(); }
             return parse_variable_statement();
         }
         case Token::Type::WHILE: {
@@ -575,9 +573,7 @@ std::shared_ptr<Expression> Parser::parse_expression_operand() noexcept {
 
     switch (peek()->type()) {
         case Token::Type::IDENTIFIER: {
-            if (const auto lparen = peek_ahead(1); lparen && lparen->matches(Token::Type::LEFT_PAREN)) {
-                return parse_function_call_expression();
-            }
+            if (identifier_is_function_call()) { return parse_function_call_expression(); }
             return std::make_shared<VariableExpression>(VariableExpression(next()->lexeme()));
         }
         case Token::Type::SINGLE_QUOTED_STRING: {
@@ -676,3 +672,8 @@ bool Parser::matches_and_consume(const Token::Type& delimiter) noexcept {
 }
 
 bool Parser::eol() const noexcept { return peek()->matches(Token::Type::END_OF_LINE); }
+
+bool Parser::identifier_is_function_call() const noexcept {
+    if (const auto ch = peek_ahead(1); !ch || !ch->matches(Token::Type::LEFT_PAREN)) { return false; }
+    return true;
+}

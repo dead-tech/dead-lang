@@ -25,6 +25,7 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
   private:
     explicit Parser(std::vector<Token>&& tokens, const std::shared_ptr<Supervisor>& supervisor) noexcept;
 
+    // Statements
     [[nodiscard]] std::shared_ptr<Statement> parse_module() noexcept;
 
     [[nodiscard]] std::shared_ptr<Statement> parse_function_statement() noexcept;
@@ -62,12 +63,14 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] std::shared_ptr<Statement> parse_struct_statement() noexcept;
 
+    // Expressions
     [[nodiscard]] std::shared_ptr<Expression> parse_expression() noexcept;
 
     [[nodiscard]] std::shared_ptr<Expression> parse_unary_expression() noexcept;
 
     [[nodiscard]] std::shared_ptr<Expression> parse_expression_operand() noexcept;
 
+    // Expression / Statement Utilities
     [[nodiscard]] std::vector<std::shared_ptr<Statement>> parse_statement_block() noexcept;
 
     [[nodiscard]] std::string parse_identifier() noexcept;
@@ -76,12 +79,15 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] Position previous_position() const noexcept;
 
+    // Parsing utilities
     template<std::invocable Callable>
     void consume_tokens_until(const Token::Type& delimiter, Callable&& callable) noexcept;
 
     [[nodiscard]] bool matches_and_consume(const Token::Type& delimiter) noexcept;
 
     [[nodiscard]] bool eol() const noexcept;
+
+    [[nodiscard]] bool identifier_is_function_call() const noexcept;
 
     std::shared_ptr<Supervisor>      m_supervisor;
     std::shared_ptr<ModuleStatement> m_current_module;
