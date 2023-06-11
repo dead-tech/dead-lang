@@ -168,6 +168,9 @@ Token Lexer::lex_plus() noexcept {
     if (auto ch = peek_ahead(1); ch == '=') {
         advance(2);
         return Token::create(Token::Type::PLUS_EQUAL, "+=", Position::create(start, cursor()));
+    } else if (ch = peek_ahead(1); ch == '+') {
+        advance(2);
+        return Token::create(Token::Type::PLUS_PLUS, "++", Position::create(start, cursor()));
     }
 
     advance(1);

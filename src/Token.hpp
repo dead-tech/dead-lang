@@ -1,7 +1,9 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <optional>
+#include <ranges>
 #include <sstream>
 #include <string>
 
@@ -44,6 +46,7 @@ class [[nodiscard]] Token {
 
         // Arithmetics
         MINUS_MINUS,
+        PLUS_PLUS,
         PLUS_EQUAL,
 
         // Others
@@ -88,6 +91,21 @@ class [[nodiscard]] Token {
     [[nodiscard]] Position position() const noexcept { return m_position; }
 
     [[nodiscard]] constexpr bool matches(const Type& rhs_type) const noexcept { return m_type == rhs_type; }
+
+    [[nodiscard]] constexpr static bool is_unary_operator(const Token& token) noexcept {
+        constexpr std::array<Type, 5> unary_operators = {
+            Type::BANG, Type::MINUS_MINUS, Type::STAR, Type::PLUS_PLUS, Type::AMPERSAND
+        };
+        return std::ranges::find(unary_operators, token.type()) != unary_operators.end();
+    }
+
+    [[nodiscard]] constexpr static bool is_binary_operator(const Token& token) noexcept {
+        constexpr std::array<Type, 9> binary_operators = {
+            Type::BANG_EQUAL, Type::EQUAL_EQUAL, Type::GREATER, Type::GREATER_EQUAL, Type::LESS,
+            Type::LESS_EQUAL, Type::MINUS,       Type::PLUS,    Type::STAR,
+        };
+        return std::ranges::find(binary_operators, token.type()) != binary_operators.end();
+    }
 
     [[nodiscard]] constexpr static std::optional<Type> is_keyword(const std::string& lexeme) noexcept {
         if (lexeme == "fn") {
@@ -197,6 +215,18 @@ class [[nodiscard]] Token {
             }
             case Type::COLON_COLON: {
                 return "::";
+            }
+            case Type::PLUS: {
+                return "+";
+            }
+            case Type::LESS: {
+                return "<";
+            }
+            case Type::PLUS_PLUS: {
+                return "++";
+            }
+            case Type::AMPERSAND: {
+                return "&";
             }
             default: {
                 return "not implemented";

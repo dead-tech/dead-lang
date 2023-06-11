@@ -10,6 +10,7 @@
 
 #include <fmt/core.h>
 
+#include "Expression.hpp"
 #include "Iterator.hpp"
 #include "Statement.hpp"
 #include "Supervisor.hpp"
@@ -57,11 +58,15 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] std::string parse_c_include_statement() noexcept;
 
-    [[nodiscard]] std::shared_ptr<Statement> parse_function_call_statement() noexcept;
+    [[nodiscard]] std::shared_ptr<Expression> parse_function_call_expression() noexcept;
 
     [[nodiscard]] std::shared_ptr<Statement> parse_struct_statement() noexcept;
 
-    [[nodiscard]] std::string parse_expression(const Token::Type& delimiter) noexcept;
+    [[nodiscard]] std::shared_ptr<Expression> parse_expression() noexcept;
+
+    [[nodiscard]] std::shared_ptr<Expression> parse_unary_expression() noexcept;
+
+    [[nodiscard]] std::shared_ptr<Expression> parse_expression_operand() noexcept;
 
     [[nodiscard]] std::vector<std::shared_ptr<Statement>> parse_statement_block() noexcept;
 

@@ -90,7 +90,11 @@ std::string FunctionStatement::evaluate() const noexcept {
     return c_function_code;
 }
 
-IfStatement::IfStatement(std::string condition, BlockStatement then_block, BlockStatement else_block) noexcept
+IfStatement::IfStatement(
+  std::shared_ptr<Expression> condition,
+  BlockStatement              then_block,
+  BlockStatement              else_block
+) noexcept
   : m_condition{ std::move(condition) },
     m_then_block{ std::move(then_block) },
     m_else_block{ std::move(else_block) } {}
@@ -98,7 +102,7 @@ IfStatement::IfStatement(std::string condition, BlockStatement then_block, Block
 std::string IfStatement::evaluate() const noexcept {
     std::string c_if_code;
 
-    c_if_code += "if (" + m_condition + ") {\n";
+    c_if_code += "if (" + m_condition->evaluate() + ") {\n";
     c_if_code += m_then_block.evaluate();
 
     if (!m_else_block.empty()) {
@@ -111,17 +115,17 @@ std::string IfStatement::evaluate() const noexcept {
     return c_if_code;
 }
 
-ReturnStatement::ReturnStatement(std::string expression) noexcept
+ReturnStatement::ReturnStatement(std::shared_ptr<Expression> expression) noexcept
   : m_expression{ std::move(expression) } {}
 
-std::string ReturnStatement::evaluate() const noexcept { return "return " + m_expression + ";"; }
+std::string ReturnStatement::evaluate() const noexcept { return "return " + m_expression->evaluate() + ";"; }
 
 VariableStatement::VariableStatement(
-  const bool               is_mutable,
-  Typechecker::BuiltinType type,
-  std::string              type_extensions,
-  std::string              name,
-  std::string              expression
+  const bool                  is_mutable,
+  Typechecker::BuiltinType    type,
+  std::string                 type_extensions,
+  std::string                 name,
+  std::shared_ptr<Expression> expression
 ) noexcept
   : m_is_mutable{ is_mutable },
     m_type{ type },
@@ -132,23 +136,23 @@ VariableStatement::VariableStatement(
 std::string VariableStatement::evaluate() const noexcept {
     const std::string mutability = m_is_mutable ? "" : "const ";
     return mutability + Typechecker::builtin_type_to_c_type(m_type) + m_type_extensions + " " + m_name + " = "
-           + m_expression + ";";
+           + m_expression->evaluate() + ";";
 }
 
-PlusEqualStatement::PlusEqualStatement(std::string name, std::string expression) noexcept
+PlusEqualStatement::PlusEqualStatement(std::string name, std::shared_ptr<Expression> expression) noexcept
   : m_name{ std::move(name) },
     m_expression{ std::move(expression) } {}
 
-std::string PlusEqualStatement::evaluate() const noexcept { return m_name + " += " + m_expression + ";"; }
+std::string PlusEqualStatement::evaluate() const noexcept { return m_name + " += " + m_expression->evaluate() + ";"; }
 
-WhileStatement::WhileStatement(std::string condition, BlockStatement body) noexcept
+WhileStatement::WhileStatement(std::shared_ptr<Expression> condition, BlockStatement body) noexcept
   : m_condition{ std::move(condition) },
     m_body{ std::move(body) } {}
 
 std::string WhileStatement::evaluate() const noexcept {
     std::string c_while_code;
 
-    c_while_code += "while (" + m_condition + ") {\n";
+    c_while_code += "while (" + m_condition->evaluate() + ") {\n";
     c_while_code += m_body.evaluate();
     c_while_code += "}\n";
 
@@ -156,10 +160,10 @@ std::string WhileStatement::evaluate() const noexcept {
 }
 
 ForStatement::ForStatement(
-  std::shared_ptr<Statement> init_statement,
-  std::string                condition,
-  std::string                increment_statement,
-  BlockStatement             body
+  std::shared_ptr<Statement>  init_statement,
+  std::shared_ptr<Expression> condition,
+  std::shared_ptr<Expression> increment_statement,
+  BlockStatement              body
 ) noexcept
   : m_init_statement{ std::move(init_statement) },
     m_condition{ std::move(condition) },
@@ -167,27 +171,27 @@ ForStatement::ForStatement(
     m_body{ std::move(body) } {}
 
 std::string ForStatement::evaluate() const noexcept {
-    std::string c_for_code;
-
-    c_for_code += "for (" + m_init_statement->evaluate() + " " + m_condition + m_increment_statement + ") {\n";
-    c_for_code += m_body.evaluate();
-    c_for_code += "}\n";
-
-    return c_for_code;
+    return fmt::format(
+      "for ({} {}; {}) {{\n{}}}\n",
+      m_init_statement->evaluate(),
+      m_condition->evaluate(),
+      m_increment_statement->evaluate(),
+      m_body.evaluate()
+    );
 }
 
-ExpressionStatement::ExpressionStatement(std::string expression) noexcept
+ExpressionStatement::ExpressionStatement(std::shared_ptr<Expression> expression) noexcept
   : m_expression{ std::move(expression) } {}
 
-std::string ExpressionStatement::evaluate() const noexcept { return m_expression + ";"; }
+std::string ExpressionStatement::evaluate() const noexcept { return m_expression->evaluate() + ";"; }
 
 
 ArrayStatement::ArrayStatement(
-  bool                     is_mutable,
-  Typechecker::BuiltinType type,
-  std::string              type_extensions,
-  std::string              name,
-  std::string              elements
+  bool                                     is_mutable,
+  Typechecker::BuiltinType                 type,
+  std::string                              type_extensions,
+  std::string                              name,
+  std::vector<std::shared_ptr<Expression>> elements
 ) noexcept
   : m_is_mutable{ is_mutable },
     m_type{ type },
@@ -197,35 +201,34 @@ ArrayStatement::ArrayStatement(
 
 std::string ArrayStatement::evaluate() const noexcept {
     const std::string mutability = m_is_mutable ? "" : "const ";
-    return fmt::format(
-      "{} {} {}{} = {{ {} }};",
-      mutability,
-      Typechecker::builtin_type_to_c_type(m_type),
-      m_name,
-      m_type_extensions,
-      m_elements
+
+    std::string c_array_code;
+
+    c_array_code += fmt::format(
+      "{} {} {}{} = {{", mutability, Typechecker::builtin_type_to_c_type(m_type), m_name, m_type_extensions
     );
+
+    for (const auto& element : m_elements) {
+        c_array_code += element->evaluate();
+        if (&element != &m_elements.back()) { c_array_code += ", "; }
+    }
+
+    c_array_code += "};";
+    return c_array_code;
 }
 
 IndexOperatorStatement::IndexOperatorStatement(
-  std::string variable_name,
-  std::string index,
-  std::string expression
+  std::string                 variable_name,
+  std::shared_ptr<Expression> index,
+  std::shared_ptr<Expression> expression
 ) noexcept
   : m_variable_name{ std::move(variable_name) },
     m_index{ std::move(index) },
     m_expression{ std::move(expression) } {}
 
 std::string IndexOperatorStatement::evaluate() const noexcept {
-    return fmt::format("{}[{}] = {};", m_variable_name, m_index, m_expression);
+    return fmt::format("{}[{}] = {};", m_variable_name, m_index->evaluate(), m_expression->evaluate());
 }
-
-FunctionCallStatement::FunctionCallStatement(std::string name, std::string args) noexcept
-  : m_name{ std::move(name) },
-    m_args{ std::move(args) } {}
-
-std::string FunctionCallStatement::evaluate() const noexcept { return fmt::format("{}({});", m_name, m_args); }
-
 
 StructStatement::StructStatement(std::string name, std::vector<std::string> member_variables) noexcept
   : m_name{ std::move(name) },

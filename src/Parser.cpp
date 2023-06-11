@@ -112,6 +112,9 @@ std::shared_ptr<Statement> Parser::parse_statement() noexcept {
         }
         case Token::Type::MUT:
         case Token::Type::IDENTIFIER: {
+            if (const auto lparen = peek_ahead(1); lparen && lparen->matches(Token::Type::LEFT_PAREN)) {
+                return parse_expression_statement();
+            }
             return parse_variable_statement();
         }
         case Token::Type::WHILE: {
@@ -141,13 +144,13 @@ std::shared_ptr<Statement> Parser::parse_if_statement() noexcept {
     }
 
     // Parse condition
-    const auto condition = parse_expression(Token::Type::RIGHT_PAREN);
+    const auto condition = parse_expression();
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
         m_supervisor->push_error("expected ')' while parsing if statement condition", previous_position());
         return nullptr;
     }
 
-    if (condition.empty()) {
+    if (!condition) {
         m_supervisor->push_error("expected expression while parsing if statement condition", previous_position());
         return nullptr;
     }
@@ -183,15 +186,8 @@ std::shared_ptr<Statement> Parser::parse_return_statement() noexcept {
     const auto return_token = next();
 
     // Parse expression
-    const auto expression = parse_expression(Token::Type::END_OF_LINE);
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error(
-          "expected newline after return statement's expression while parsing", return_token->position()
-        );
-        return nullptr;
-    }
-
-    if (expression.empty()) {
+    const auto expression = parse_expression();
+    if (!expression) {
         m_supervisor->push_error("expected expression after return keyword while parsing", return_token->position());
         return nullptr;
     }
@@ -200,8 +196,6 @@ std::shared_ptr<Statement> Parser::parse_return_statement() noexcept {
 }
 
 std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter) noexcept {
-    if (peek_ahead(1)->type() == Token::Type::LEFT_PAREN) { return parse_function_call_statement(); }
-
     const bool is_mutable = peek()->type() == Token::Type::MUT;
 
     // Skip the mut keyword if present
@@ -236,8 +230,8 @@ std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& e
         return nullptr;
     }
 
-    const auto expression = parse_expression(ending_delimiter);
-    if (expression.empty()) {
+    const auto expression = parse_expression();
+    if (!expression) {
         m_supervisor->push_error(
           "expected expression after '=' in variable declaration while parsing", equal_token->position()
         );
@@ -273,8 +267,8 @@ std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string&
     // Skip the plus_equal token
     const auto plus_equal_token = next();
 
-    const auto expression = parse_expression(Token::Type::END_OF_LINE);
-    if (expression.empty()) {
+    const auto expression = parse_expression();
+    if (!expression) {
         m_supervisor->push_error(
           "expected expression after '+=' in variable assignment while parsing", plus_equal_token->position()
         );
@@ -301,14 +295,14 @@ std::shared_ptr<Statement> Parser::parse_while_statement() noexcept {
     }
 
     // Parse condition
-    const auto condition = parse_expression(Token::Type::RIGHT_PAREN);
+    const auto condition = parse_expression();
     // Skip the right paren
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
         m_supervisor->push_error("expected ')' after while-loop condition while parsing", while_token->position());
         return nullptr;
     }
 
-    if (condition.empty()) {
+    if (!condition) {
         m_supervisor->push_error("expected expression while parsing while-loop condition", while_token->position());
         return nullptr;
     }
@@ -348,21 +342,26 @@ std::shared_ptr<Statement> Parser::parse_for_statement() noexcept {
     }
 
     // Parse condition
-    const auto condition = parse_expression(Token::Type::SEMICOLON);
-    if (condition.empty()) {
+    const auto condition = parse_expression();
+    if (!condition) {
         m_supervisor->push_error("expected expression while parsing for-loop condition", for_token->position());
         return nullptr;
     }
 
+    if (!matches_and_consume(Token::Type::SEMICOLON)) {
+        m_supervisor->push_error("expected ';' after for-loop condition while parsing", previous_position());
+        return nullptr;
+    }
+
     // Parse increment
-    const auto increment = parse_expression(Token::Type::RIGHT_PAREN);
+    const auto increment = parse_expression();
     // Skip the right paren
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
         m_supervisor->push_error("expected ')' after for-loop increment while parsing", previous_position());
         return nullptr;
     }
 
-    if (increment.empty()) {
+    if (!increment) {
         m_supervisor->push_error("expected expression while parsing for-loop increment", for_token->position());
         return nullptr;
     }
@@ -385,8 +384,8 @@ std::shared_ptr<Statement> Parser::parse_for_statement() noexcept {
 }
 
 std::shared_ptr<Statement> Parser::parse_expression_statement() noexcept {
-    const auto expression = parse_expression(Token::Type::END_OF_LINE);
-    if (expression.empty()) {
+    const auto expression = parse_expression();
+    if (!expression) {
         m_supervisor->push_error("expected expression while parsing expression statement", previous_position());
         return nullptr;
     }
@@ -418,7 +417,14 @@ std::shared_ptr<Statement> Parser::parse_array_statement(
         return nullptr;
     }
 
-    const auto array_elements = parse_expression(Token::Type::RIGHT_BRACKET);
+    std::vector<std::shared_ptr<Expression>> array_elements;
+    consume_tokens_until(Token::Type::RIGHT_BRACKET, [this, &array_elements] {
+        if (peek()->matches(Token::Type::COMMA)) { advance(1); }
+        const auto expression = parse_expression();
+        if (!expression) { return; }
+        array_elements.push_back(expression);
+    });
+
     if (!matches_and_consume(Token::Type::RIGHT_BRACKET)) {
         m_supervisor->push_error("expected ']' after array declaration while parsing", previous_position());
         return nullptr;
@@ -437,13 +443,13 @@ std::shared_ptr<Statement> Parser::parse_array_statement(
 std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::string&& variable_name) noexcept {
     const auto left_bracket_token = next();
 
-    const auto index = parse_expression(Token::Type::RIGHT_BRACKET);
+    const auto index = parse_expression();
     if (!matches_and_consume(Token::Type::RIGHT_BRACKET)) {
         m_supervisor->push_error("expected ']' after index operator while parsing", previous_position());
         return nullptr;
     }
 
-    if (index.empty()) {
+    if (!index) {
         m_supervisor->push_error("expected index in index operator while parsing", left_bracket_token->position());
         return nullptr;
     }
@@ -453,8 +459,8 @@ std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::str
         return nullptr;
     }
 
-    const auto value = parse_expression(Token::Type::END_OF_LINE);
-    if (value.empty()) {
+    const auto value = parse_expression();
+    if (!value) {
         m_supervisor->push_error("expected expression after index operator while parsing", previous_position());
         return nullptr;
     }
@@ -479,7 +485,7 @@ std::string Parser::parse_c_include_statement() noexcept {
     return path->lexeme();
 }
 
-std::shared_ptr<Statement> Parser::parse_function_call_statement() noexcept {
+std::shared_ptr<Expression> Parser::parse_function_call_expression() noexcept {
     const auto function_name = next()->lexeme();
 
     // This should never be the case since we check for this left paren when
@@ -489,16 +495,14 @@ std::shared_ptr<Statement> Parser::parse_function_call_statement() noexcept {
         return nullptr;
     }
 
-    std::string arguments;
-    consume_tokens_until(Token::Type::END_OF_LINE, [this, &arguments] { arguments.append(next()->lexeme()); });
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error("expected newline after function call while parsing", previous_position());
+    std::vector<std::shared_ptr<Expression>> arguments;
+    consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &arguments] { arguments.push_back(parse_expression()); });
+    if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
+        m_supervisor->push_error("expected ')' after function call while parsing", previous_position());
         return nullptr;
     }
 
-    return std::make_shared<FunctionCallStatement>(
-      FunctionCallStatement(function_name, arguments.substr(0, arguments.size() - 1))
-    );
+    return std::make_shared<FunctionCallExpression>(FunctionCallExpression(function_name, arguments));
 }
 
 std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept {
@@ -532,13 +536,84 @@ std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept {
     return std::make_shared<StructStatement>(StructStatement(struct_name, member_variables));
 }
 
-std::string Parser::parse_expression(const Token::Type& delimiter) noexcept {
-    std::string expression;
-    while (!peek()->matches(delimiter)) {
-        if (eol() || eof() || m_supervisor->has_errors()) { return ""; }
-        expression.append(next()->lexeme());
+std::shared_ptr<Expression> Parser::parse_expression() noexcept {
+    // Binary operator
+    auto lhs = parse_expression_operand();
+    if (!lhs) {
+        m_supervisor->push_error("expected expression while parsing", previous_position());
+        return nullptr;
     }
-    return expression;
+
+    const auto binary_operator = peek();
+    if (!binary_operator || !Token::is_binary_operator(*binary_operator)) { return lhs; }
+
+    // Skip the binary operator token
+    advance(1);
+
+    const auto rhs = parse_expression_operand();
+    if (!rhs) {
+        m_supervisor->push_error("expected expression right hand side operand while parsing", previous_position());
+        return nullptr;
+    }
+
+    return std::make_shared<BinaryExpression>(BinaryExpression(lhs, binary_operator->type(), rhs));
+}
+
+std::shared_ptr<Expression> Parser::parse_unary_expression() noexcept {
+    const auto unary_operator = next();
+    const auto operand        = parse_expression_operand();
+    if (!operand) {
+        m_supervisor->push_error("expected operand after unary operator while parsing", previous_position());
+        return nullptr;
+    }
+
+    return std::make_shared<UnaryExpression>(UnaryExpression(unary_operator->type(), operand));
+}
+
+std::shared_ptr<Expression> Parser::parse_expression_operand() noexcept {
+    if (Token::is_unary_operator(*peek())) { return parse_unary_expression(); }
+
+    switch (peek()->type()) {
+        case Token::Type::IDENTIFIER: {
+            if (const auto lparen = peek_ahead(1); lparen && lparen->matches(Token::Type::LEFT_PAREN)) {
+                return parse_function_call_expression();
+            }
+            return std::make_shared<VariableExpression>(VariableExpression(next()->lexeme()));
+        }
+        case Token::Type::SINGLE_QUOTED_STRING: {
+            const auto literal = fmt::format("'{}'", next()->lexeme());
+            return std::make_shared<LiteralExpression>(LiteralExpression(literal));
+        }
+        case Token::Type::DOUBLE_QUOTED_STRING: {
+            const auto literal = fmt::format("{}", next()->lexeme());
+            return std::make_shared<LiteralExpression>(LiteralExpression(literal));
+        }
+        case Token::Type::NUMBER: {
+            return std::make_shared<LiteralExpression>(LiteralExpression(next()->lexeme()));
+        }
+        case Token::Type::RIGHT_PAREN:
+        case Token::Type::LEFT_PAREN: {
+            advance(1);
+            auto expression = parse_expression();
+            if (!expression) {
+                m_supervisor->push_error("expected expression inside parentheses while parsing", previous_position());
+                return nullptr;
+            }
+
+            if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
+                m_supervisor->push_error("expected ')' after expression while parsing", previous_position());
+                return nullptr;
+            }
+
+            return expression;
+        }
+        default: {
+            m_supervisor->push_error(
+              fmt::format("expected expression operand while parsing, got '{}'", peek()->lexeme()), peek()->position()
+            );
+            return nullptr;
+        }
+    }
 }
 
 std::vector<std::shared_ptr<Statement>> Parser::parse_statement_block() noexcept {
