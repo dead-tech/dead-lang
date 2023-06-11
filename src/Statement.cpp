@@ -13,6 +13,12 @@ std::string transpile_variable_declaration(
                                         ? *variable_declaration.custom_type
                                         : Typechecker::builtin_type_to_c_type(variable_declaration.type);
 
+    if (Typechecker::is_fixed_size_array(variable_declaration.type_extensions)) {
+        return fmt::format(
+          "{}{} {}{}", mutability, variable_type, variable_declaration.name, variable_declaration.type_extensions
+        );
+    }
+
     return fmt::format(
       "{}{}{} {}", mutability, variable_type, variable_declaration.type_extensions, variable_declaration.name
     );
