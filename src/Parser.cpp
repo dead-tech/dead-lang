@@ -51,8 +51,11 @@ std::shared_ptr<Statement> Parser::parse_function_statement() noexcept {
     }
 
     // Parse arguments
-    std::string args;
-    consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &args] { args.append(" " + next()->lexeme()); });
+    std::vector<Typechecker::VariableDeclaration> args;
+    consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &args] {
+        if (peek()->matches(Token::Type::COMMA)) { advance(1); }
+        args.push_back(parse_variable_declaration());
+    });
 
     // Skip the right paren
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {

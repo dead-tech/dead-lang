@@ -73,10 +73,10 @@ std::string ModuleStatement::evaluate() const noexcept {
 }
 
 FunctionStatement::FunctionStatement(
-  std::string    name,
-  std::string    args,
-  std::string    return_type,
-  BlockStatement body
+  std::string                                   name,
+  std::vector<Typechecker::VariableDeclaration> args,
+  std::string                                   return_type,
+  BlockStatement                                body
 ) noexcept
   : m_name{ std::move(name) },
     m_args{ std::move(args) },
@@ -86,35 +86,18 @@ FunctionStatement::FunctionStatement(
 std::string FunctionStatement::evaluate() const noexcept {
     std::string c_function_code;
 
-    const std::string c_return_type = Typechecker::builtin_type_to_c_type(m_return_type);
+    const std::string return_value =
+      Typechecker::builtin_type_from_string(m_return_type) != Typechecker::BuiltinType::NONE
+        ? Typechecker::builtin_type_to_c_type(m_return_type)
+        : m_return_type;
 
-    std::string c_args;
-    const auto  arguments = dts::split_str(m_args, ',');
-    for (const auto& argument : arguments) {
-        const auto pieces = dts::split_str(argument, ' ');
-
-        const std::size_t is_mutable = pieces.front() == "mut" ? 1 : 0;
-
-        const std::string& variable_type   = pieces[0 + is_mutable];
-        const std::string  type_extensions = std::accumulate(
-          pieces.begin() + 1 + static_cast<long>(is_mutable),
-          pieces.end() - 1,
-          std::string{},
-          [](const auto& acc, const auto& piece) { return acc + piece; }
-        );
-        const std::string& variable_name = pieces.back();
-
-        c_args += static_cast<bool>(is_mutable) ? "" : "const ";
-        c_args +=
-          fmt::format("{}{} {}", Typechecker::builtin_type_to_c_type(variable_type), type_extensions, variable_name);
-
-        if (&argument != &arguments.back()) { c_args += ", "; }
+    std::string args;
+    for (const auto& arg : m_args) {
+        args += transpile_variable_declaration(arg);
+        if (&arg != &m_args.back()) { args += ", "; }
     }
 
-    c_function_code += c_return_type + " " + m_name + "(" + c_args + ") {\n";
-    c_function_code += m_body.evaluate();
-    c_function_code += "}\n";
-
+    c_function_code += fmt::format("{} {}({}) {{\n{}}}\n", return_value, m_name, args, m_body.evaluate());
     return c_function_code;
 }
 

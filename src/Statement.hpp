@@ -73,15 +73,20 @@ class [[nodiscard]] ModuleStatement final : public Statement {
 
 class [[nodiscard]] FunctionStatement final : public Statement {
   public:
-    FunctionStatement(std::string name, std::string args, std::string return_type, BlockStatement body) noexcept;
+    FunctionStatement(
+      std::string                                   name,
+      std::vector<Typechecker::VariableDeclaration> args,
+      std::string                                   return_type,
+      BlockStatement                                body
+    ) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
-    std::string    m_name;
-    std::string    m_args;
-    std::string    m_return_type;
-    BlockStatement m_body;
+    std::string                                   m_name;
+    std::vector<Typechecker::VariableDeclaration> m_args;
+    std::string                                   m_return_type;
+    BlockStatement                                m_body;
 };
 
 class [[nodiscard]] IfStatement final : public Statement {
