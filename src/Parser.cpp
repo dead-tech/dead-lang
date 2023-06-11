@@ -228,8 +228,6 @@ std::shared_ptr<Statement> Parser::parse_variable_assignment() noexcept {
 
     if (const auto next_token = peek(); next_token && next_token->matches(Token::Type::PLUS_EQUAL)) {
         return parse_plus_equal_statement(std::move(variable_name));
-    } else if (next_token && next_token->matches(Token::Type::LEFT_BRACKET)) {
-        return parse_index_operator_statement(std::move(variable_name));
     }
 
     m_supervisor->push_error("INTERNAL ERROR: unsupported variable assignment operator", previous_position());
@@ -406,7 +404,8 @@ std::shared_ptr<Statement> Parser::parse_array_statement(const Typechecker::Vari
     return std::make_shared<ArrayStatement>(ArrayStatement(variable_declaration, array_elements));
 }
 
-std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::string&& variable_name) noexcept {
+std::shared_ptr<Expression> Parser::parse_index_operator_expression() noexcept {
+    const auto variable_name      = parse_identifier();
     const auto left_bracket_token = next();
 
     const auto index = parse_expression();
@@ -420,23 +419,7 @@ std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::str
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::EQUAL)) {
-        m_supervisor->push_error("expected '=' after index operator while parsing", previous_position());
-        return nullptr;
-    }
-
-    const auto value = parse_expression();
-    if (!value) {
-        m_supervisor->push_error("expected expression after index operator while parsing", previous_position());
-        return nullptr;
-    }
-
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error("expected newline after index operator while parsing", previous_position());
-        return nullptr;
-    }
-
-    return std::make_shared<IndexOperatorStatement>(IndexOperatorStatement(variable_name, index, value));
+    return std::make_shared<IndexOperatorExpression>(IndexOperatorExpression(variable_name, index));
 }
 
 std::string Parser::parse_c_include_statement() noexcept {
@@ -546,7 +529,11 @@ std::shared_ptr<Expression> Parser::parse_expression_operand() noexcept {
 
     switch (peek()->type()) {
         case Token::Type::IDENTIFIER: {
-            if (identifier_is_function_call()) { return parse_function_call_expression(); }
+            if (identifier_is_function_call()) {
+                return parse_function_call_expression();
+            } else if (identifier_is_index_operator()) {
+                return parse_index_operator_expression();
+            }
             return std::make_shared<VariableExpression>(VariableExpression(next()->lexeme()));
         }
         case Token::Type::SINGLE_QUOTED_STRING: {
@@ -684,6 +671,11 @@ void Parser::skip_newlines() noexcept {
 
 bool Parser::identifier_is_function_call() const noexcept {
     if (const auto ch = peek_ahead(1); !ch || !ch->matches(Token::Type::LEFT_PAREN)) { return false; }
+    return true;
+}
+
+bool Parser::identifier_is_index_operator() const noexcept {
+    if (const auto ch = peek_ahead(1); !ch || !ch->matches(Token::Type::LEFT_BRACKET)) { return false; }
     return true;
 }
 

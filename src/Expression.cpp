@@ -62,3 +62,10 @@ std::string FunctionCallExpression::evaluate() const noexcept {
     c_function_call_code += ")";
     return c_function_call_code;
 }
+IndexOperatorExpression::IndexOperatorExpression(std::string left, std::shared_ptr<Expression> right) noexcept
+  : m_variable_name{ std::move(left) },
+    m_index{ std::move(right) } {}
+
+std::string IndexOperatorExpression::evaluate() const noexcept {
+    return fmt::format("{}[{}]", m_variable_name, m_index->evaluate());
+}
