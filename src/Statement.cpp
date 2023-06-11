@@ -260,7 +260,7 @@ std::string StructStatement::evaluate() const noexcept {
     // Automatically generate a constructor
     c_struct_code += fmt::format("\n{} {}_new(", m_name, m_name);
     for (const auto& member_variable : m_member_variables) {
-        c_struct_code += fmt::format("{}", transpile_variable_declaration(member_variable, true));
+        c_struct_code += fmt::format("{}", transpile_variable_declaration(member_variable));
         if (&member_variable != &m_member_variables.back()) { c_struct_code += ", "; }
     }
     c_struct_code += ") {\n";

@@ -100,10 +100,10 @@ class [[nodiscard]] Token {
     }
 
     [[nodiscard]] constexpr static bool is_binary_operator(const Token& token) noexcept {
-        constexpr std::array<Type, 10> binary_operators = { Type::BANG_EQUAL,    Type::EQUAL_EQUAL, Type::GREATER,
+        constexpr std::array<Type, 11> binary_operators = { Type::BANG_EQUAL,    Type::EQUAL_EQUAL, Type::GREATER,
                                                             Type::GREATER_EQUAL, Type::LESS,        Type::LESS_EQUAL,
                                                             Type::MINUS,         Type::PLUS,        Type::STAR,
-                                                            Type::COLON_COLON };
+                                                            Type::COLON_COLON,   Type::DOT };
         return std::ranges::find(binary_operators, token.type()) != binary_operators.end();
     }
 
