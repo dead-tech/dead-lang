@@ -3,6 +3,22 @@
 #include <fmt/format.h>
 #include <utility>
 
+namespace {
+std::string transpile_variable_declaration(
+  const Typechecker::VariableDeclaration& variable_declaration,
+  bool                                    ignore_mutability = false
+) {
+    const std::string mutability    = variable_declaration.is_mutable || ignore_mutability ? "" : "const ";
+    const std::string variable_type = variable_declaration.type == Typechecker::BuiltinType::STRUCT
+                                        ? *variable_declaration.custom_type
+                                        : Typechecker::builtin_type_to_c_type(variable_declaration.type);
+
+    return fmt::format(
+      "{}{}{} {}", mutability, variable_type, variable_declaration.type_extensions, variable_declaration.name
+    );
+}
+} // namespace
+
 std::string EmptyStatement::evaluate() const noexcept { return ""; }
 
 BlockStatement::BlockStatement(std::vector<std::shared_ptr<Statement>> block) noexcept
@@ -23,10 +39,16 @@ auto BlockStatement::empty() const noexcept { return m_block.empty(); }
 
 void BlockStatement::append(const std::shared_ptr<Statement>& statement) noexcept { m_block.push_back(statement); }
 
-ModuleStatement::ModuleStatement(std::string name) noexcept
+ModuleStatement::ModuleStatement(
+  std::string              name,
+  std::vector<std::string> c_includes,
+  BlockStatement           structs,
+  BlockStatement           functions
+) noexcept
   : m_name{ std::move(name) },
-    m_structs{ {} },
-    m_functions{ {} } {}
+    m_c_includes{ std::move(c_includes) },
+    m_structs{ std::move(structs) },
+    m_functions{ std::move(functions) } {}
 
 std::string ModuleStatement::evaluate() const noexcept {
     std::string c_module_code;
@@ -121,22 +143,14 @@ ReturnStatement::ReturnStatement(std::shared_ptr<Expression> expression) noexcep
 std::string ReturnStatement::evaluate() const noexcept { return "return " + m_expression->evaluate() + ";"; }
 
 VariableStatement::VariableStatement(
-  const bool                  is_mutable,
-  Typechecker::BuiltinType    type,
-  std::string                 type_extensions,
-  std::string                 name,
-  std::shared_ptr<Expression> expression
+  Typechecker::VariableDeclaration variable,
+  std::shared_ptr<Expression>      expression
 ) noexcept
-  : m_is_mutable{ is_mutable },
-    m_type{ type },
-    m_type_extensions{ std::move(type_extensions) },
-    m_name{ std::move(name) },
+  : m_variable_declaration{ std::move(variable) },
     m_expression{ std::move(expression) } {}
 
 std::string VariableStatement::evaluate() const noexcept {
-    const std::string mutability = m_is_mutable ? "" : "const ";
-    return mutability + Typechecker::builtin_type_to_c_type(m_type) + m_type_extensions + " " + m_name + " = "
-           + m_expression->evaluate() + ";";
+    return fmt::format("{} = {};", transpile_variable_declaration(m_variable_declaration), m_expression->evaluate());
 }
 
 PlusEqualStatement::PlusEqualStatement(std::string name, std::shared_ptr<Expression> expression) noexcept
@@ -187,26 +201,17 @@ std::string ExpressionStatement::evaluate() const noexcept { return m_expression
 
 
 ArrayStatement::ArrayStatement(
-  bool                                     is_mutable,
-  Typechecker::BuiltinType                 type,
-  std::string                              type_extensions,
-  std::string                              name,
+  Typechecker::VariableDeclaration         variable_declaration,
   std::vector<std::shared_ptr<Expression>> elements
 ) noexcept
-  : m_is_mutable{ is_mutable },
-    m_type{ type },
-    m_type_extensions{ std::move(type_extensions) },
-    m_name{ std::move(name) },
+  : m_variable_declaration{ std::move(variable_declaration) },
     m_elements{ std::move(elements) } {}
 
 std::string ArrayStatement::evaluate() const noexcept {
-    const std::string mutability = m_is_mutable ? "" : "const ";
+    const std::string mutability = m_variable_declaration.is_mutable ? "" : "const ";
 
     std::string c_array_code;
-
-    c_array_code += fmt::format(
-      "{} {} {}{} = {{", mutability, Typechecker::builtin_type_to_c_type(m_type), m_name, m_type_extensions
-    );
+    c_array_code += fmt::format("{} = {{", transpile_variable_declaration(m_variable_declaration));
 
     for (const auto& element : m_elements) {
         c_array_code += element->evaluate();
@@ -230,7 +235,10 @@ std::string IndexOperatorStatement::evaluate() const noexcept {
     return fmt::format("{}[{}] = {};", m_variable_name, m_index->evaluate(), m_expression->evaluate());
 }
 
-StructStatement::StructStatement(std::string name, std::vector<std::string> member_variables) noexcept
+StructStatement::StructStatement(
+  std::string                                   name,
+  std::vector<Typechecker::VariableDeclaration> member_variables
+) noexcept
   : m_name{ std::move(name) },
     m_member_variables{ std::move(member_variables) } {}
 
@@ -239,9 +247,30 @@ std::string StructStatement::evaluate() const noexcept {
 
     c_struct_code += "typedef struct " + m_name + " {\n";
     for (const auto& member_variable : m_member_variables) {
-        c_struct_code += fmt::format("    {};\n", member_variable);
+        c_struct_code += fmt::format("    {};\n", transpile_variable_declaration(member_variable, true));
     }
     c_struct_code += fmt::format("}} {};\n", m_name);
+
+    // Automatically generate a constructor
+    c_struct_code += fmt::format("\n{} {}_new(", m_name, m_name);
+    for (const auto& member_variable : m_member_variables) {
+        c_struct_code += fmt::format("{}", transpile_variable_declaration(member_variable, true));
+        if (&member_variable != &m_member_variables.back()) { c_struct_code += ", "; }
+    }
+    c_struct_code += ") {\n";
+
+    std::string temporary_instance_name;
+    std::ranges::transform(m_name, std::back_inserter(temporary_instance_name), [](const auto ch) {
+        return std::tolower(ch);
+    });
+    c_struct_code += fmt::format("    {} {};\n", m_name, temporary_instance_name);
+
+    for (const auto& member_variable : m_member_variables) {
+        c_struct_code +=
+          fmt::format("    {}.{} = {};\n", temporary_instance_name, member_variable.name, member_variable.name);
+    }
+    c_struct_code += fmt::format("    return {};\n", temporary_instance_name);
+    c_struct_code += "}\n";
 
     return c_struct_code;
 }

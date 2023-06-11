@@ -13,13 +13,9 @@ Parser::Parser(std::vector<Token>&& tokens, const std::shared_ptr<Supervisor>& s
 std::shared_ptr<Statement> Parser::parse_module() noexcept {
     const std::string name = "main";
 
-    const auto modul = std::make_shared<ModuleStatement>(name);
-
-    auto& c_includes = modul->c_includes();
-    auto& structs    = modul->structs();
-    auto& functions  = modul->functions();
-
-    m_current_module = modul;
+    std::vector<std::string>                c_includes;
+    std::vector<std::shared_ptr<Statement>> structs;
+    std::vector<std::shared_ptr<Statement>> functions;
 
     while (!eof() && !m_supervisor->has_errors()) {
         if (eol()) {
@@ -30,13 +26,13 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept {
         if (peek()->matches(Token::Type::C_INCLUDE)) {
             c_includes.push_back(parse_c_include_statement());
         } else if (peek()->matches(Token::Type::STRUCT)) {
-            structs.append(parse_struct_statement());
+            structs.push_back(parse_struct_statement());
         } else {
-            functions.append(parse_function_statement());
+            functions.push_back(parse_function_statement());
         }
     }
 
-    return modul;
+    return std::make_shared<ModuleStatement>(name, c_includes, BlockStatement(structs), BlockStatement(functions));
 }
 
 std::shared_ptr<Statement> Parser::parse_function_statement() noexcept {
@@ -194,32 +190,13 @@ std::shared_ptr<Statement> Parser::parse_return_statement() noexcept {
 }
 
 std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter) noexcept {
-    const bool is_mutable = peek()->type() == Token::Type::MUT;
+    const auto variable_declaration = parse_variable_declaration();
 
-    // Skip the mut keyword if present
-    if (is_mutable) { advance(1); }
+    if (variable_declaration.type == Typechecker::BuiltinType::NONE) { return parse_variable_assignment(); }
 
-    // FIXME: This logic is garbage
-    const auto variable_type = Typechecker::builtin_type_from_string(peek()->lexeme());
-    if (variable_type == Typechecker::BuiltinType::NONE) { return parse_variable_assignment(); }
-
-    // Skip the type
-    advance(1);
-
-    std::string type_extensions;
-    consume_tokens_until(Token::Type::IDENTIFIER, [this, &type_extensions] {
-        if (eol()) {
-            m_supervisor->push_error("expected variable name after variable type while parsing", previous_position());
-        }
-        type_extensions.append(next()->lexeme());
-    });
-
-    // Check if the variable is of array type
-    if (Typechecker::is_fixed_size_array(type_extensions)) {
-        return parse_array_statement(is_mutable, variable_type, type_extensions);
+    if (Typechecker::is_fixed_size_array(variable_declaration.type_extensions)) {
+        return parse_array_statement(variable_declaration);
     }
-
-    const std::string variable_name = parse_identifier();
 
     // Skip equal sign
     const auto equal_token = peek();
@@ -243,9 +220,7 @@ std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& e
         return nullptr;
     }
 
-    return std::make_shared<VariableStatement>(
-      VariableStatement(is_mutable, variable_type, type_extensions, variable_name, expression)
-    );
+    return std::make_shared<VariableStatement>(VariableStatement(variable_declaration, expression));
 }
 
 std::shared_ptr<Statement> Parser::parse_variable_assignment() noexcept {
@@ -398,13 +373,8 @@ std::shared_ptr<Statement> Parser::parse_expression_statement() noexcept {
     return std::make_shared<ExpressionStatement>(ExpressionStatement(expression));
 }
 
-std::shared_ptr<Statement> Parser::parse_array_statement(
-  const bool                      is_mutable,
-  const Typechecker::BuiltinType& variable_type,
-  const std::string&              type_extensions
+std::shared_ptr<Statement> Parser::parse_array_statement(const Typechecker::VariableDeclaration& variable_declaration
 ) noexcept {
-    const auto variable_name = parse_identifier();
-
     if (!matches_and_consume(Token::Type::EQUAL)) {
         m_supervisor->push_error("expected '=' after array declaration while parsing", previous_position());
         return nullptr;
@@ -433,9 +403,7 @@ std::shared_ptr<Statement> Parser::parse_array_statement(
         return nullptr;
     }
 
-    return std::make_shared<ArrayStatement>(
-      ArrayStatement(is_mutable, variable_type, type_extensions, variable_name, array_elements)
-    );
+    return std::make_shared<ArrayStatement>(ArrayStatement(variable_declaration, array_elements));
 }
 
 std::shared_ptr<Statement> Parser::parse_index_operator_statement(const std::string&& variable_name) noexcept {
@@ -494,7 +462,11 @@ std::shared_ptr<Expression> Parser::parse_function_call_expression() noexcept {
     }
 
     std::vector<std::shared_ptr<Expression>> arguments;
-    consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &arguments] { arguments.push_back(parse_expression()); });
+    consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &arguments] {
+        if (peek()->matches(Token::Type::COMMA)) { advance(1); }
+        arguments.push_back(parse_expression());
+    });
+
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
         m_supervisor->push_error("expected ')' after function call while parsing", previous_position());
         return nullptr;
@@ -519,7 +491,7 @@ std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept {
         return nullptr;
     }
 
-    const std::vector<std::string> member_variables = parse_member_variables();
+    const std::vector<Typechecker::VariableDeclaration> member_variables = parse_member_variables();
 
     if (!matches_and_consume(Token::Type::RIGHT_BRACE)) {
         m_supervisor->push_error("expected '}' after struct body while parsing", previous_position());
@@ -531,6 +503,7 @@ std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept {
         return nullptr;
     }
 
+    m_defined_structs.push_back(struct_name);
     return std::make_shared<StructStatement>(StructStatement(struct_name, member_variables));
 }
 
@@ -632,26 +605,58 @@ std::string Parser::parse_identifier() noexcept {
     return identifier->lexeme();
 }
 
-std::vector<std::string> Parser::parse_member_variables() noexcept {
-    std::vector<std::string> member_variables;
-    std::size_t              it = 0;
-    while (!eof()) {
-        if (peek()->matches(Token::Type::END_OF_LINE)) {
-            ++it;
-            next();
-            continue;
-        } else if (peek()->matches(Token::Type::RIGHT_BRACE)) {
-            break;
+std::vector<Typechecker::VariableDeclaration> Parser::parse_member_variables() noexcept {
+    std::vector<Typechecker::VariableDeclaration> member_variables;
+    consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &member_variables] {
+        const auto variable_declaration = parse_variable_declaration();
+        if (variable_declaration.type == Typechecker::BuiltinType::NONE) {
+            m_supervisor->push_error(
+              "unexpected variable type while parsing struct member variables", previous_position()
+            );
+            return;
         }
-
-        if (member_variables.size() <= it) {
-            member_variables.push_back(next()->lexeme() + " ");
-        } else {
-            member_variables[it].append(next()->lexeme());
-        }
-    }
+        member_variables.push_back(variable_declaration);
+    });
 
     return member_variables;
+}
+
+Typechecker::VariableDeclaration Parser::parse_variable_declaration() noexcept {
+    const bool is_mutable = peek()->type() == Token::Type::MUT;
+
+    // Skip the mut keyword if present
+    if (is_mutable) { advance(1); }
+
+    // FIXME: This logic is garbage
+    auto variable_type = Typechecker::builtin_type_from_string(peek()->lexeme());
+
+    // Check if it is a struct type
+    std::optional<std::string> custom_type = std::nullopt;
+    if (is_defined_struct(*peek())) {
+        variable_type = Typechecker::BuiltinType::STRUCT;
+        custom_type   = peek()->lexeme();
+    }
+
+    // Skip the type
+    advance(1);
+
+    std::string type_extensions;
+    consume_tokens_until(Token::Type::IDENTIFIER, [this, &type_extensions] {
+        if (eol()) {
+            m_supervisor->push_error("expected variable name after variable type while parsing", previous_position());
+        }
+        type_extensions.append(next()->lexeme());
+    });
+
+    const std::string variable_name = parse_identifier();
+
+    skip_newlines();
+
+    return Typechecker::VariableDeclaration{ .type            = variable_type,
+                                             .type_extensions = type_extensions,
+                                             .is_mutable      = is_mutable,
+                                             .name            = variable_name,
+                                             .custom_type     = custom_type };
 }
 
 Position Parser::previous_position() const noexcept { return previous().value_or(Token::create_dumb()).position(); }
@@ -673,7 +678,15 @@ bool Parser::matches_and_consume(const Token::Type& delimiter) noexcept {
 
 bool Parser::eol() const noexcept { return peek()->matches(Token::Type::END_OF_LINE); }
 
+void Parser::skip_newlines() noexcept {
+    while (eol()) { advance(1); }
+}
+
 bool Parser::identifier_is_function_call() const noexcept {
     if (const auto ch = peek_ahead(1); !ch || !ch->matches(Token::Type::LEFT_PAREN)) { return false; }
     return true;
+}
+
+bool Parser::is_defined_struct(const Token& token) const noexcept {
+    return std::ranges::find(m_defined_structs, token.lexeme()) != m_defined_structs.end();
 }

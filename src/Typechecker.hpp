@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 class [[nodiscard]] Typechecker {
@@ -17,7 +18,16 @@ class [[nodiscard]] Typechecker {
         F32,
         F64,
         CHAR,
+        STRUCT,
         NONE,
+    };
+
+    struct [[nodiscard]] VariableDeclaration {
+        BuiltinType                type;
+        std::string                type_extensions;
+        bool                       is_mutable;
+        std::string                name;
+        std::optional<std::string> custom_type;
     };
 
     [[nodiscard]] static constexpr BuiltinType builtin_type_from_string(const std::string& type) noexcept {

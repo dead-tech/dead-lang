@@ -49,11 +49,8 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] std::shared_ptr<Statement> parse_expression_statement() noexcept;
 
-    [[nodiscard]] std::shared_ptr<Statement> parse_array_statement(
-      const bool                      is_mutable,
-      const Typechecker::BuiltinType& array_type,
-      const std::string&              type_extensions
-    ) noexcept;
+    [[nodiscard]] std::shared_ptr<Statement>
+      parse_array_statement(const Typechecker::VariableDeclaration& variable_declaration) noexcept;
 
     [[nodiscard]] std::shared_ptr<Statement> parse_index_operator_statement(const std::string&& variable_name) noexcept;
 
@@ -73,13 +70,17 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
     // Expression / Statement Utilities
     [[nodiscard]] std::vector<std::shared_ptr<Statement>> parse_statement_block() noexcept;
 
+
     [[nodiscard]] std::string parse_identifier() noexcept;
 
-    [[nodiscard]] std::vector<std::string> parse_member_variables() noexcept;
+    [[nodiscard]] std::vector<Typechecker::VariableDeclaration> parse_member_variables() noexcept;
+
+    [[nodiscard]] Typechecker::VariableDeclaration parse_variable_declaration() noexcept;
+
+    // Parsing utilities
 
     [[nodiscard]] Position previous_position() const noexcept;
 
-    // Parsing utilities
     template<std::invocable Callable>
     void consume_tokens_until(const Token::Type& delimiter, Callable&& callable) noexcept;
 
@@ -87,8 +88,13 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>> {
 
     [[nodiscard]] bool eol() const noexcept;
 
+    void skip_newlines() noexcept;
+
     [[nodiscard]] bool identifier_is_function_call() const noexcept;
 
-    std::shared_ptr<Supervisor>      m_supervisor;
-    std::shared_ptr<ModuleStatement> m_current_module;
+    [[nodiscard]] bool is_defined_struct(const Token& token) const noexcept;
+
+    std::shared_ptr<Supervisor> m_supervisor;
+
+    std::vector<std::string> m_defined_structs = {};
 };

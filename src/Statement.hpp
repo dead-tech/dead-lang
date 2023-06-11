@@ -43,6 +43,8 @@ class [[nodiscard]] BlockStatement final : public Statement {
 
     [[nodiscard]] auto empty() const noexcept;
 
+    [[nodiscard]] const std::vector<std::shared_ptr<Statement>>& data() const noexcept { return m_block; }
+
     [[nodiscard]] std::string evaluate() const noexcept override;
 
     void append(const std::shared_ptr<Statement>& statement) noexcept;
@@ -53,21 +55,14 @@ class [[nodiscard]] BlockStatement final : public Statement {
 
 class [[nodiscard]] ModuleStatement final : public Statement {
   public:
-    explicit ModuleStatement(std::string name) noexcept;
+    explicit ModuleStatement(
+      std::string              name,
+      std::vector<std::string> c_includes,
+      BlockStatement           structs,
+      BlockStatement           functions
+    ) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
-
-    [[nodiscard]] auto& c_includes() noexcept { return m_c_includes; }
-
-    [[nodiscard]] const auto& c_includes() const noexcept { return m_c_includes; }
-
-    [[nodiscard]] auto& structs() noexcept { return m_structs; }
-
-    [[nodiscard]] auto& functions() noexcept { return m_functions; }
-
-    [[nodiscard]] const auto& structs() const noexcept { return m_structs; }
-
-    [[nodiscard]] const auto& functions() const noexcept { return m_functions; }
 
   private:
     std::string              m_name;
@@ -113,22 +108,13 @@ class [[nodiscard]] ReturnStatement final : public Statement {
 
 class [[nodiscard]] VariableStatement final : public Statement {
   public:
-    VariableStatement(
-      const bool                  is_mutable,
-      Typechecker::BuiltinType    type,
-      std::string                 type_extensions,
-      std::string                 name,
-      std::shared_ptr<Expression> expression
-    ) noexcept;
+    VariableStatement(Typechecker::VariableDeclaration variable, std::shared_ptr<Expression> expression) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
-    bool                        m_is_mutable;
-    Typechecker::BuiltinType    m_type;
-    std::string                 m_type_extensions;
-    std::string                 m_name;
-    std::shared_ptr<Expression> m_expression;
+    Typechecker::VariableDeclaration m_variable_declaration;
+    std::shared_ptr<Expression>      m_expression;
 };
 
 class [[nodiscard]] PlusEqualStatement final : public Statement {
@@ -184,20 +170,14 @@ class [[nodiscard]] ExpressionStatement final : public Statement {
 class [[nodiscard]] ArrayStatement final : public Statement {
   public:
     ArrayStatement(
-      bool                                     is_mutable,
-      Typechecker::BuiltinType                 type,
-      std::string                              type_extensions,
-      std::string                              name,
+      Typechecker::VariableDeclaration         variable_declaration,
       std::vector<std::shared_ptr<Expression>> elements
     ) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
-    bool                                     m_is_mutable;
-    Typechecker::BuiltinType                 m_type;
-    std::string                              m_type_extensions;
-    std::string                              m_name;
+    Typechecker::VariableDeclaration         m_variable_declaration;
     std::vector<std::shared_ptr<Expression>> m_elements;
 };
 
@@ -219,11 +199,13 @@ class [[nodiscard]] IndexOperatorStatement final : public Statement {
 
 class [[nodiscard]] StructStatement final : public Statement {
   public:
-    StructStatement(std::string name, std::vector<std::string> member_variables) noexcept;
+    StructStatement(std::string name, std::vector<Typechecker::VariableDeclaration> member_variables) noexcept;
+
+    [[nodiscard]] const std::string& name() const noexcept { return m_name; }
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
-    std::string              m_name;
-    std::vector<std::string> m_member_variables;
+    std::string                                   m_name;
+    std::vector<Typechecker::VariableDeclaration> m_member_variables;
 };
