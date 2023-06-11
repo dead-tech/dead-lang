@@ -74,6 +74,10 @@ Token Lexer::next_token() noexcept {
             advance(1);
             return Token::create(Token::Type::RIGHT_BRACKET, "]", Position::create(cursor(), cursor()));
         }
+        case '.': {
+            advance(1);
+            return Token::create(Token::Type::DOT, ".", Position::create(cursor(), cursor()));
+        }
         case '+': {
             return lex_plus();
         }
