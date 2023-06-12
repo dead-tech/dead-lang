@@ -97,3 +97,20 @@ class [[nodiscard]] IndexOperatorExpression final : public Expression
     std::string                 m_variable_name;
     std::shared_ptr<Expression> m_index;
 };
+
+
+class [[nodiscard]] AssignmentExpression final : public Expression
+{
+  public:
+    AssignmentExpression(
+        std::shared_ptr<Expression> lhs,
+        Token::Type                 assignment_operator,
+        std::shared_ptr<Expression> rhs) noexcept;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    std::shared_ptr<Expression> m_lhs;
+    Token::Type                 m_operator;
+    std::shared_ptr<Expression> m_rhs;
+};

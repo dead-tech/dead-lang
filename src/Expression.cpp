@@ -88,3 +88,22 @@ std::string IndexOperatorExpression::evaluate() const noexcept
 {
     return fmt::format("{}[{}]", m_variable_name, m_index->evaluate());
 }
+
+AssignmentExpression::AssignmentExpression(
+    std::shared_ptr<Expression> lhs,
+    Token::Type                 assignment_operator,
+    std::shared_ptr<Expression> rhs) noexcept
+    : m_lhs{std::move(lhs)},
+      m_operator{assignment_operator},
+      m_rhs{std::move(rhs)}
+{
+}
+
+std::string AssignmentExpression::evaluate() const noexcept
+{
+    return fmt::format(
+        "({} {} {})",
+        m_lhs->evaluate(),
+        Token::type_to_string(m_operator),
+        m_rhs->evaluate());
+}

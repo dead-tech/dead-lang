@@ -224,12 +224,12 @@ std::shared_ptr<Statement> Parser::parse_return_statement()
 
 std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter)
 {
-    const auto variable_declaration = parse_variable_declaration();
-
-    if (variable_declaration.type == Typechecker::BuiltinType::NONE) {
-        return parse_variable_assignment();
+    if (!Typechecker::is_valid_type(*peek(), m_defined_structs) &&
+        !peek()->matches(Token::Type::MUT)) {
+        return std::make_shared<ExpressionStatement>(parse_assignment_expression());
     }
 
+    const auto variable_declaration = parse_variable_declaration();
     if (Typechecker::is_fixed_size_array(variable_declaration.type_extensions)) {
         return parse_array_statement(variable_declaration);
     }
@@ -261,20 +261,6 @@ std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& e
 
     return std::make_shared<VariableStatement>(
         VariableStatement(variable_declaration, expression));
-}
-
-std::shared_ptr<Statement> Parser::parse_variable_assignment()
-{
-    auto variable_name = next()->lexeme();
-
-    if (const auto next_token = peek();
-        next_token && next_token->matches(Token::Type::PLUS_EQUAL)) {
-        return parse_plus_equal_statement(std::move(variable_name));
-    }
-
-    m_supervisor->push_error(
-        "INTERNAL ERROR: unsupported variable assignment operator", previous_position());
-    return nullptr;
 }
 
 std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string&& variable_name)
@@ -556,6 +542,42 @@ std::shared_ptr<Expression> Parser::parse_expression()
         BinaryExpression(lhs, binary_operator->type(), rhs));
 }
 
+std::shared_ptr<Expression> Parser::parse_assignment_expression()
+{
+    const auto lhs = parse_expression();
+
+    const auto assignment_operator = next();
+    if (!assignment_operator) {
+        m_supervisor->push_error(
+            "expected variable assignment operator while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!Token::is_assignment_operator(*assignment_operator)) {
+        m_supervisor->push_error(
+            "INTERNAL ERROR: unsupported variable assignment operator", previous_position());
+        return nullptr;
+    }
+
+    const auto rhs = parse_expression();
+    if (!rhs) {
+        m_supervisor->push_error(
+            "expected expression right hand side operand while parsing",
+            previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error(
+            "expected newline after assignment expression while parsing",
+            previous_position());
+        return nullptr;
+    }
+
+    return std::make_shared<AssignmentExpression>(
+        AssignmentExpression(lhs, assignment_operator->type(), rhs));
+}
+
 std::shared_ptr<Expression> Parser::parse_unary_expression()
 {
     const auto unary_operator = next();
@@ -727,7 +749,6 @@ Typechecker::VariableDeclaration Parser::parse_variable_declaration() noexcept
     // Skip the mut keyword if present
     if (is_mutable) { advance(1); }
 
-    // FIXME: This logic is garbage
     auto variable_type = Typechecker::builtin_type_from_string(peek()->lexeme());
 
     // Check if it is a struct type

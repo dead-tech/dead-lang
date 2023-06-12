@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <vector>
+
+#include "Token.hpp"
 
 class [[nodiscard]] Typechecker
 {
@@ -137,9 +140,19 @@ class [[nodiscard]] Typechecker
         return builtin_type_to_c_type(builtin_type_from_string(type));
     }
 
-    [[nodiscard]] static constexpr bool is_fixed_size_array(const std::string& type_extensions)
+    [[nodiscard]] static constexpr bool is_fixed_size_array(const std::string& type_extensions) noexcept
     {
         return !type_extensions.empty() && type_extensions.front() == '[' &&
                type_extensions.back() == ']';
+    }
+
+    [[nodiscard]] static constexpr bool
+    is_valid_type(const Token& token, const std::vector<std::string>& custom_types) noexcept
+    {
+        if (!token.matches(Token::Type::IDENTIFIER)) { return false; }
+
+        return Typechecker::builtin_type_from_string(token.lexeme()) !=
+                   Typechecker::BuiltinType::NONE ||
+               std::ranges::find(custom_types, token.lexeme()) != custom_types.end();
     }
 };

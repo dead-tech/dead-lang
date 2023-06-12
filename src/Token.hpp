@@ -116,7 +116,7 @@ class [[nodiscard]] Token
 
     [[nodiscard]] constexpr static bool is_binary_operator(const Token& token) noexcept
     {
-        constexpr std::array<Type, 11> binary_operators = {
+        constexpr std::array<Type, 12> binary_operators = {
             Type::BANG_EQUAL,
             Type::EQUAL_EQUAL,
             Type::GREATER,
@@ -128,6 +128,7 @@ class [[nodiscard]] Token
             Type::STAR,
             Type::COLON_COLON,
             Type::DOT,
+            Type::ARROW,
         };
 
         return std::ranges::find(binary_operators, token.type()) !=
@@ -147,6 +148,16 @@ class [[nodiscard]] Token
         return {};
     }
 
+    [[nodiscard]] constexpr static bool is_assignment_operator(const Token& token) noexcept
+    {
+        constexpr std::array<Type, 2> assignment_operators = {
+            Type::EQUAL,
+            Type::PLUS_EQUAL,
+        };
+
+        return std::ranges::find(assignment_operators, token.type()) !=
+               assignment_operators.end();
+    }
 
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
     {
