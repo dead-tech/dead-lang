@@ -17,12 +17,12 @@ class [[nodiscard]] Lexer : public Iterator<std::string>
 {
   public:
     [[nodiscard]] static std::vector<Token>
-    lex(std::string source, const std::shared_ptr<Supervisor>& supervisor) noexcept;
+    lex(std::string source, const std::shared_ptr<Supervisor>& supervisor);
 
   private:
     explicit Lexer(std::string&& source, const std::shared_ptr<Supervisor>& supervisor) noexcept;
 
-    [[nodiscard]] Token next_token() noexcept;
+    [[nodiscard]] Token next_token();
 
     void skip_whitespaces() noexcept;
 
@@ -38,7 +38,7 @@ class [[nodiscard]] Lexer : public Iterator<std::string>
 
     [[nodiscard]] Token lex_less_than() noexcept;
 
-    [[nodiscard]] Token lex_single_quoted_string() noexcept;
+    [[nodiscard]] Token lex_single_quoted_string();
 
     [[nodiscard]] Token lex_number() noexcept;
 

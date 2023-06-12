@@ -117,7 +117,7 @@ std::shared_ptr<Statement> Parser::parse_function_statement() noexcept
         FunctionStatement(name->lexeme(), args, return_type, BlockStatement(body)));
 }
 
-std::shared_ptr<Statement> Parser::parse_statement() noexcept
+std::shared_ptr<Statement> Parser::parse_statement()
 {
     switch (peek()->type()) {
         case Token::Type::IF: {
@@ -149,7 +149,7 @@ std::shared_ptr<Statement> Parser::parse_statement() noexcept
     }
 }
 
-std::shared_ptr<Statement> Parser::parse_if_statement() noexcept
+std::shared_ptr<Statement> Parser::parse_if_statement()
 {
     // Skip the if token
     const auto if_token = next();
@@ -205,7 +205,7 @@ std::shared_ptr<Statement> Parser::parse_if_statement() noexcept
         condition, BlockStatement(then_block), BlockStatement(else_block)));
 }
 
-std::shared_ptr<Statement> Parser::parse_return_statement() noexcept
+std::shared_ptr<Statement> Parser::parse_return_statement()
 {
     // Skip the return token
     const auto return_token = next();
@@ -222,7 +222,7 @@ std::shared_ptr<Statement> Parser::parse_return_statement() noexcept
     return std::make_shared<ReturnStatement>(ReturnStatement(expression));
 }
 
-std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter) noexcept
+std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter)
 {
     const auto variable_declaration = parse_variable_declaration();
 
@@ -263,7 +263,7 @@ std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& e
         VariableStatement(variable_declaration, expression));
 }
 
-std::shared_ptr<Statement> Parser::parse_variable_assignment() noexcept
+std::shared_ptr<Statement> Parser::parse_variable_assignment()
 {
     auto variable_name = next()->lexeme();
 
@@ -277,7 +277,7 @@ std::shared_ptr<Statement> Parser::parse_variable_assignment() noexcept
     return nullptr;
 }
 
-std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string&& variable_name) noexcept
+std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string&& variable_name)
 {
     // Skip the plus_equal token
     const auto plus_equal_token = next();
@@ -302,7 +302,7 @@ std::shared_ptr<Statement> Parser::parse_plus_equal_statement(const std::string&
     return std::make_shared<PlusEqualStatement>(PlusEqualStatement(variable_name, expression));
 }
 
-std::shared_ptr<Statement> Parser::parse_while_statement() noexcept
+std::shared_ptr<Statement> Parser::parse_while_statement()
 {
     // Skip the while token and the left paren
     const auto while_token = next();
@@ -348,7 +348,7 @@ std::shared_ptr<Statement> Parser::parse_while_statement() noexcept
     return std::make_shared<WhileStatement>(WhileStatement(condition, BlockStatement(body)));
 }
 
-std::shared_ptr<Statement> Parser::parse_for_statement() noexcept
+std::shared_ptr<Statement> Parser::parse_for_statement()
 {
     // Skip the for token and the left paren
     const auto for_token = next();
@@ -417,7 +417,7 @@ std::shared_ptr<Statement> Parser::parse_for_statement() noexcept
         ForStatement(initializer, condition, increment, BlockStatement(body)));
 }
 
-std::shared_ptr<Statement> Parser::parse_expression_statement() noexcept
+std::shared_ptr<Statement> Parser::parse_expression_statement()
 {
     const auto expression = parse_expression();
     if (!expression) {
@@ -437,8 +437,7 @@ std::shared_ptr<Statement> Parser::parse_expression_statement() noexcept
     return std::make_shared<ExpressionStatement>(ExpressionStatement(expression));
 }
 
-std::shared_ptr<Statement>
-Parser::parse_array_statement(const Typechecker::VariableDeclaration& variable_declaration) noexcept
+std::shared_ptr<Statement> Parser::parse_array_statement(const Typechecker::VariableDeclaration& variable_declaration)
 {
     if (!matches_and_consume(Token::Type::EQUAL)) {
         m_supervisor->push_error(
@@ -475,30 +474,7 @@ Parser::parse_array_statement(const Typechecker::VariableDeclaration& variable_d
     return std::make_shared<ArrayStatement>(ArrayStatement(variable_declaration, array_elements));
 }
 
-std::shared_ptr<Expression> Parser::parse_index_operator_expression() noexcept
-{
-    const auto variable_name      = parse_identifier();
-    const auto left_bracket_token = next();
-
-    const auto index = parse_expression();
-    if (!matches_and_consume(Token::Type::RIGHT_BRACKET)) {
-        m_supervisor->push_error(
-            "expected ']' after index operator while parsing", previous_position());
-        return nullptr;
-    }
-
-    if (!index) {
-        m_supervisor->push_error(
-            "expected index in index operator while parsing",
-            left_bracket_token->position());
-        return nullptr;
-    }
-
-    return std::make_shared<IndexOperatorExpression>(
-        IndexOperatorExpression(variable_name, index));
-}
-
-std::string Parser::parse_c_include_statement() noexcept
+std::string Parser::parse_c_include_statement()
 {
     const auto include_token = next();
     const auto path          = next();
@@ -510,34 +486,6 @@ std::string Parser::parse_c_include_statement() noexcept
     }
 
     return path->lexeme();
-}
-
-std::shared_ptr<Expression> Parser::parse_function_call_expression() noexcept
-{
-    const auto function_name = next()->lexeme();
-
-    // This should never be the case since we check for this left paren when
-    // entering this function, but it's always good to check + we shift the cursor by doing so.
-    if (!matches_and_consume(Token::Type::LEFT_PAREN)) {
-        m_supervisor->push_error(
-            "expected '(' after function name while parsing", previous_position());
-        return nullptr;
-    }
-
-    std::vector<std::shared_ptr<Expression>> arguments;
-    consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &arguments] {
-        if (peek()->matches(Token::Type::COMMA)) { advance(1); }
-        arguments.push_back(parse_expression());
-    });
-
-    if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
-        m_supervisor->push_error(
-            "expected ')' after function call while parsing", previous_position());
-        return nullptr;
-    }
-
-    return std::make_shared<FunctionCallExpression>(
-        FunctionCallExpression(function_name, arguments));
 }
 
 std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept
@@ -579,7 +527,7 @@ std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept
     return std::make_shared<StructStatement>(StructStatement(struct_name, member_variables));
 }
 
-std::shared_ptr<Expression> Parser::parse_expression() noexcept
+std::shared_ptr<Expression> Parser::parse_expression()
 {
     // Binary operator
     auto lhs = parse_expression_operand();
@@ -608,7 +556,7 @@ std::shared_ptr<Expression> Parser::parse_expression() noexcept
         BinaryExpression(lhs, binary_operator->type(), rhs));
 }
 
-std::shared_ptr<Expression> Parser::parse_unary_expression() noexcept
+std::shared_ptr<Expression> Parser::parse_unary_expression()
 {
     const auto unary_operator = next();
     const auto operand        = parse_expression_operand();
@@ -621,7 +569,7 @@ std::shared_ptr<Expression> Parser::parse_unary_expression() noexcept
     return std::make_shared<UnaryExpression>(UnaryExpression(unary_operator->type(), operand));
 }
 
-std::shared_ptr<Expression> Parser::parse_expression_operand() noexcept
+std::shared_ptr<Expression> Parser::parse_expression_operand()
 {
     if (Token::is_unary_operator(*peek())) { return parse_unary_expression(); }
 
@@ -677,6 +625,57 @@ std::shared_ptr<Expression> Parser::parse_expression_operand() noexcept
             return nullptr;
         }
     }
+}
+
+std::shared_ptr<Expression> Parser::parse_function_call_expression() noexcept
+{
+    const auto function_name = next()->lexeme();
+
+    // This should never be the case since we check for this left paren when
+    // entering this function, but it's always good to check + we shift the cursor by doing so.
+    if (!matches_and_consume(Token::Type::LEFT_PAREN)) {
+        m_supervisor->push_error(
+            "expected '(' after function name while parsing", previous_position());
+        return nullptr;
+    }
+
+    std::vector<std::shared_ptr<Expression>> arguments;
+    consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &arguments] {
+        if (peek()->matches(Token::Type::COMMA)) { advance(1); }
+        arguments.push_back(parse_expression());
+    });
+
+    if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
+        m_supervisor->push_error(
+            "expected ')' after function call while parsing", previous_position());
+        return nullptr;
+    }
+
+    return std::make_shared<FunctionCallExpression>(
+        FunctionCallExpression(function_name, arguments));
+}
+
+std::shared_ptr<Expression> Parser::parse_index_operator_expression()
+{
+    const auto variable_name      = parse_identifier();
+    const auto left_bracket_token = next();
+
+    const auto index = parse_expression();
+    if (!matches_and_consume(Token::Type::RIGHT_BRACKET)) {
+        m_supervisor->push_error(
+            "expected ']' after index operator while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!index) {
+        m_supervisor->push_error(
+            "expected index in index operator while parsing",
+            left_bracket_token->position());
+        return nullptr;
+    }
+
+    return std::make_shared<IndexOperatorExpression>(
+        IndexOperatorExpression(variable_name, index));
 }
 
 std::vector<std::shared_ptr<Statement>> Parser::parse_statement_block() noexcept

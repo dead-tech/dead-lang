@@ -1,6 +1,6 @@
 #include "Lexer.hpp"
 
-std::vector<Token> Lexer::lex(std::string source, const std::shared_ptr<Supervisor>& supervisor) noexcept
+std::vector<Token> Lexer::lex(std::string source, const std::shared_ptr<Supervisor>& supervisor)
 {
     Lexer lexer(std::move(source), supervisor);
 
@@ -21,7 +21,7 @@ Lexer::Lexer(std::string&& source, const std::shared_ptr<Supervisor>& supervisor
 {
 }
 
-Token Lexer::next_token() noexcept
+Token Lexer::next_token()
 {
     if (m_supervisor->has_errors()) { return Token::create_dumb(); }
 
@@ -231,7 +231,7 @@ Token Lexer::lex_less_than() noexcept
     return Token::create(Token::Type::LESS, "<", Position::create(start, cursor()));
 }
 
-Token Lexer::lex_single_quoted_string() noexcept
+Token Lexer::lex_single_quoted_string()
 {
     const auto start = cursor();
 

@@ -29,28 +29,28 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     // Statements
     [[nodiscard]] std::shared_ptr<Statement> parse_module() noexcept;
     [[nodiscard]] std::shared_ptr<Statement> parse_function_statement() noexcept;
-    [[nodiscard]] std::shared_ptr<Statement> parse_statement() noexcept;
-    [[nodiscard]] std::shared_ptr<Statement> parse_if_statement() noexcept;
-    [[nodiscard]] std::shared_ptr<Statement> parse_return_statement() noexcept;
-    [[nodiscard]] std::shared_ptr<Statement> parse_variable_statement(
-        const Token::Type& ending_delimiter = Token::Type::END_OF_LINE) noexcept;
-    [[nodiscard]] std::shared_ptr<Statement> parse_variable_assignment() noexcept;
+    [[nodiscard]] std::shared_ptr<Statement> parse_statement();
+    [[nodiscard]] std::shared_ptr<Statement> parse_if_statement();
+    [[nodiscard]] std::shared_ptr<Statement> parse_return_statement();
     [[nodiscard]] std::shared_ptr<Statement>
-    parse_plus_equal_statement(const std::string&& variable_name) noexcept;
-    [[nodiscard]] std::shared_ptr<Statement> parse_while_statement() noexcept;
-    [[nodiscard]] std::shared_ptr<Statement> parse_for_statement() noexcept;
-    [[nodiscard]] std::shared_ptr<Statement> parse_expression_statement() noexcept;
+                                             parse_variable_statement(const Token::Type& ending_delimiter = Token::Type::END_OF_LINE);
+    [[nodiscard]] std::shared_ptr<Statement> parse_variable_assignment();
     [[nodiscard]] std::shared_ptr<Statement>
-                              parse_array_statement(const Typechecker::VariableDeclaration& variable_declaration) noexcept;
-    [[nodiscard]] std::string parse_c_include_statement() noexcept;
+    parse_plus_equal_statement(const std::string&& variable_name);
+    [[nodiscard]] std::shared_ptr<Statement> parse_while_statement();
+    [[nodiscard]] std::shared_ptr<Statement> parse_for_statement();
+    [[nodiscard]] std::shared_ptr<Statement> parse_expression_statement();
+    [[nodiscard]] std::shared_ptr<Statement>
+                                             parse_array_statement(const Typechecker::VariableDeclaration& variable_declaration);
+    [[nodiscard]] std::string                parse_c_include_statement();
     [[nodiscard]] std::shared_ptr<Statement> parse_struct_statement() noexcept;
 
     // Expressions
-    [[nodiscard]] std::shared_ptr<Expression> parse_expression() noexcept;
-    [[nodiscard]] std::shared_ptr<Expression> parse_unary_expression() noexcept;
-    [[nodiscard]] std::shared_ptr<Expression> parse_expression_operand() noexcept;
+    [[nodiscard]] std::shared_ptr<Expression> parse_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_unary_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_expression_operand();
     [[nodiscard]] std::shared_ptr<Expression> parse_function_call_expression() noexcept;
-    [[nodiscard]] std::shared_ptr<Expression> parse_index_operator_expression() noexcept;
+    [[nodiscard]] std::shared_ptr<Expression> parse_index_operator_expression();
 
 
     // Expression / Statement Utilities
