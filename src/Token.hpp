@@ -136,24 +136,14 @@ class [[nodiscard]] Token
 
     [[nodiscard]] constexpr static std::optional<Type> is_keyword(const std::string& lexeme) noexcept
     {
-        if (lexeme == "fn") {
-            return Type::FN;
-        } else if (lexeme == "if") {
-            return Type::IF;
-        } else if (lexeme == "mut") {
-            return Type::MUT;
-        } else if (lexeme == "return") {
-            return Type::RETURN;
-        } else if (lexeme == "while") {
-            return Type::WHILE;
-        } else if (lexeme == "for") {
-            return Type::FOR;
-        } else if (lexeme == "include") {
-            return Type::C_INCLUDE;
-        } else if (lexeme == "struct") {
-            return Type::STRUCT;
-        }
-
+        if (lexeme == "fn") { return Type::FN; }
+        if (lexeme == "if") { return Type::IF; }
+        if (lexeme == "mut") { return Type::MUT; }
+        if (lexeme == "return") { return Type::RETURN; }
+        if (lexeme == "while") { return Type::WHILE; }
+        if (lexeme == "for") { return Type::FOR; }
+        if (lexeme == "include") { return Type::C_INCLUDE; }
+        if (lexeme == "struct") { return Type::STRUCT; }
         return {};
     }
 

@@ -35,29 +35,17 @@ class [[nodiscard]] Typechecker
 
     [[nodiscard]] static constexpr BuiltinType builtin_type_from_string(const std::string& type) noexcept
     {
-        if (type == "u8") {
-            return BuiltinType::U8;
-        } else if (type == "i8") {
-            return BuiltinType::I8;
-        } else if (type == "u16") {
-            return BuiltinType::U16;
-        } else if (type == "i16") {
-            return BuiltinType::I16;
-        } else if (type == "u32") {
-            return BuiltinType::U32;
-        } else if (type == "i32") {
-            return BuiltinType::I32;
-        } else if (type == "u64") {
-            return BuiltinType::U64;
-        } else if (type == "f32") {
-            return BuiltinType::F32;
-        } else if (type == "f64") {
-            return BuiltinType::F64;
-        } else if (type == "char") {
-            return BuiltinType::CHAR;
-        } else {
-            return BuiltinType::NONE;
-        }
+        if (type == "u8") { return BuiltinType::U8; }
+        if (type == "i8") { return BuiltinType::I8; }
+        if (type == "u16") { return BuiltinType::U16; }
+        if (type == "i16") { return BuiltinType::I16; }
+        if (type == "u32") { return BuiltinType::U32; }
+        if (type == "i32") { return BuiltinType::I32; }
+        if (type == "u64") { return BuiltinType::U64; }
+        if (type == "f32") { return BuiltinType::F32; }
+        if (type == "f64") { return BuiltinType::F64; }
+        if (type == "char") { return BuiltinType::CHAR; }
+        return BuiltinType::NONE;
     }
 
     [[nodiscard]] static constexpr std::string builtin_type_to_string(const BuiltinType& type) noexcept

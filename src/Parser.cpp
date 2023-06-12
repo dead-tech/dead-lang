@@ -81,14 +81,14 @@ std::shared_ptr<Statement> Parser::parse_function_statement() noexcept
         return nullptr;
     }
 
-    if (const auto ret_type = next();
-        !ret_type || !ret_type->matches(Token::Type::IDENTIFIER)) {
+    const auto ret_type = next();
+    if (!ret_type || !ret_type->matches(Token::Type::IDENTIFIER)) {
         m_supervisor->push_error(
             "expected return type after '->' while parsing", previous_position());
         return nullptr;
-    } else {
-        return_type = ret_type->lexeme();
     }
+
+    return_type = ret_type->lexeme();
 
     // Skip the left brace
     if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
@@ -198,11 +198,11 @@ std::shared_ptr<Statement> Parser::parse_if_statement() noexcept
         !else_token || !else_token->matches(Token::Type::ELSE)) {
         return std::make_shared<IfStatement>(
             IfStatement(condition, BlockStatement(then_block), BlockStatement({})));
-    } else {
-        const auto else_block = parse_statement_block();
-        return std::make_shared<IfStatement>(IfStatement(
-            condition, BlockStatement(then_block), BlockStatement(else_block)));
     }
+
+    const auto else_block = parse_statement_block();
+    return std::make_shared<IfStatement>(IfStatement(
+        condition, BlockStatement(then_block), BlockStatement(else_block)));
 }
 
 std::shared_ptr<Statement> Parser::parse_return_statement() noexcept
@@ -629,9 +629,12 @@ std::shared_ptr<Expression> Parser::parse_expression_operand() noexcept
         case Token::Type::IDENTIFIER: {
             if (identifier_is_function_call()) {
                 return parse_function_call_expression();
-            } else if (identifier_is_index_operator()) {
+            }
+
+            if (identifier_is_index_operator()) {
                 return parse_index_operator_expression();
             }
+
             return std::make_shared<VariableExpression>(
                 VariableExpression(next()->lexeme()));
         }

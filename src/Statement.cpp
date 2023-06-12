@@ -50,9 +50,9 @@ std::string BlockStatement::evaluate() const noexcept
                     std::dynamic_pointer_cast<EmptyStatement>(statement);
                 empty_statement) {
                 return acc + statement->evaluate();
-            } else {
-                return acc + statement->evaluate() + "\n";
             }
+
+            return acc + statement->evaluate() + "\n";
         });
 }
 

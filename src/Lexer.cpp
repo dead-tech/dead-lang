@@ -123,9 +123,9 @@ void Lexer::skip_whitespaces() noexcept
         if (ch == ' ' || ch == '\t' || ch == '\r') {
             advance(1);
             return dts::IteratorDecision::Continue;
-        } else {
-            return dts::IteratorDecision::Break;
         }
+
+        return dts::IteratorDecision::Break;
     });
 }
 
@@ -141,9 +141,9 @@ Token Lexer::lex_keyword_or_identifier() noexcept
             value += ch;
             advance(1);
             return dts::IteratorDecision::Continue;
-        } else {
-            return dts::IteratorDecision::Break;
         }
+
+        return dts::IteratorDecision::Break;
     });
 
     if (const auto keyword = Token::is_keyword(value); keyword.has_value()) {
@@ -158,10 +158,14 @@ Token Lexer::lex_minus() noexcept
 {
     const auto start = cursor();
 
-    if (auto ch = peek_ahead(1); ch == '>') {
+    auto ch = peek_ahead(1);
+
+    if (ch == '>') {
         advance(2);
         return Token::create(Token::Type::ARROW, "->", Position::create(start, cursor()));
-    } else if (ch = peek_ahead(1); ch == '-') {
+    }
+
+    if (ch = peek_ahead(1); ch == '-') {
         advance(2);
         return Token::create(
             Token::Type::MINUS_MINUS, "--", Position::create(start, cursor()));
@@ -196,11 +200,15 @@ Token Lexer::lex_plus() noexcept
 {
     const auto start = cursor();
 
-    if (auto ch = peek_ahead(1); ch == '=') {
+    auto ch = peek_ahead(1);
+
+    if (ch == '=') {
         advance(2);
         return Token::create(
             Token::Type::PLUS_EQUAL, "+=", Position::create(start, cursor()));
-    } else if (ch = peek_ahead(1); ch == '+') {
+    }
+
+    if (ch = peek_ahead(1); ch == '+') {
         advance(2);
         return Token::create(Token::Type::PLUS_PLUS, "++", Position::create(start, cursor()));
     }
@@ -255,9 +263,9 @@ Token Lexer::lex_number() noexcept
             value += ch;
             advance(1);
             return dts::IteratorDecision::Continue;
-        } else {
-            return dts::IteratorDecision::Break;
         }
+
+        return dts::IteratorDecision::Break;
     });
 
     return Token::create(
@@ -277,7 +285,9 @@ Token Lexer::lex_double_quoted_string() noexcept
             value += ch;
             advance(1);
             return dts::IteratorDecision::Continue;
-        } else if (ch == '\n') {
+        }
+
+        if (ch == '\n') {
             m_supervisor->push_error(
                 "unterminated double quoted string", Position::create(cursor(), cursor()));
             return dts::IteratorDecision::Break;
@@ -313,10 +323,7 @@ void Lexer::consume_chars(Callable&& callable) noexcept
 {
     while (!eof()) {
         const auto iterator_decision = callable(*peek());
-        if (iterator_decision == dts::IteratorDecision::Break) {
-            break;
-        } else if (iterator_decision == dts::IteratorDecision::Continue) {
-            continue;
-        }
+        if (iterator_decision == dts::IteratorDecision::Break) { break; }
+        if (iterator_decision == dts::IteratorDecision::Continue) { continue; }
     }
 }
