@@ -19,12 +19,13 @@ void print_usage() { fmt::println("usage: ./dead_lang <file.dl>"); }
 
 int main(int argc, char** argv)
 {
-    if (argc < 2) {
+    const auto argv_span = std::span(argv, static_cast<std::size_t>(argc));
+    if (argv_span.size() < 2) {
         print_usage();
         return 1;
     }
 
-    const auto file_content = dts::read_file(argv[1]);
+    const auto file_content = dts::read_file(argv_span[1]);
     if (!file_content.has_value()) {
         fmt::print(
             stderr,

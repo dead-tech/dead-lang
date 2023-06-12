@@ -799,7 +799,7 @@ void Parser::skip_newlines() noexcept
 
 bool Parser::identifier_is_function_call() const noexcept
 {
-    if (const auto ch = peek_ahead(1); !ch || !ch->matches(Token::Type::LEFT_PAREN)) {
+    if (const auto token = peek_ahead(1); !token || !token->matches(Token::Type::LEFT_PAREN)) {
         return false;
     }
     return true;
@@ -807,7 +807,8 @@ bool Parser::identifier_is_function_call() const noexcept
 
 bool Parser::identifier_is_index_operator() const noexcept
 {
-    if (const auto ch = peek_ahead(1); !ch || !ch->matches(Token::Type::LEFT_BRACKET)) {
+    if (const auto token = peek_ahead(1);
+        !token || !token->matches(Token::Type::LEFT_BRACKET)) {
         return false;
     }
     return true;
