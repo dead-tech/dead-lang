@@ -12,7 +12,10 @@
 #include "Parser.hpp"
 #include "Supervisor.hpp"
 
-static void print_usage() { fmt::println("usage: ./dead_lang <file.dl>"); }
+namespace
+{
+void print_usage() { fmt::println("usage: ./dead_lang <file.dl>"); }
+} // namespace
 
 int main(int argc, char** argv)
 {
