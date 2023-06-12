@@ -58,11 +58,6 @@ std::string BlockStatement::evaluate() const noexcept
 
 auto BlockStatement::empty() const noexcept { return m_block.empty(); }
 
-void BlockStatement::append(const std::shared_ptr<Statement>& statement) noexcept
-{
-    m_block.push_back(statement);
-}
-
 ModuleStatement::ModuleStatement(
     std::string              name,
     std::vector<std::string> c_includes,

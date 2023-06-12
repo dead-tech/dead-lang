@@ -24,8 +24,6 @@ class [[nodiscard]] Iterator
 
     std::optional<value_type> peek_behind(const std::size_t offset) const noexcept;
 
-    std::optional<value_type> peek_at(const std::size_t index) const noexcept;
-
     std::optional<value_type> previous() const noexcept;
 
     void advance(const std::size_t offset) noexcept;
@@ -90,14 +88,6 @@ Iterator<Iterable>::peek_behind(const std::size_t offset) const noexcept
 {
     if (m_cursor - offset >= m_data.size()) { return {}; }
     return m_data[m_cursor - offset];
-}
-
-template <typename Iterable>
-std::optional<typename Iterator<Iterable>::value_type>
-Iterator<Iterable>::peek_at(const std::size_t index) const noexcept
-{
-    if (index >= m_data.size()) { return {}; }
-    return m_data[index];
 }
 
 template <typename Iterable>

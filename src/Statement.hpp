@@ -53,8 +53,6 @@ class [[nodiscard]] BlockStatement final : public Statement
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
-    void append(const std::shared_ptr<Statement>& statement) noexcept;
-
   private:
     std::vector<std::shared_ptr<Statement>> m_block;
 };
