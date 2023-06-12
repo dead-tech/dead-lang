@@ -11,9 +11,11 @@
 
 #include "Position.hpp"
 
-class [[nodiscard]] Token {
+class [[nodiscard]] Token
+{
   public:
-    enum class Type : std::uint8_t {
+    enum class Type : std::uint8_t
+    {
         // Single-character tokens
         LEFT_PAREN,
         RIGHT_PAREN,
@@ -86,28 +88,54 @@ class [[nodiscard]] Token {
 
     [[nodiscard]] constexpr Type type() const noexcept { return m_type; }
 
-    [[nodiscard]] constexpr std::string lexeme() const noexcept { return m_lexeme; }
+    [[nodiscard]] constexpr std::string lexeme() const noexcept
+    {
+        return m_lexeme;
+    }
 
     [[nodiscard]] Position position() const noexcept { return m_position; }
 
-    [[nodiscard]] constexpr bool matches(const Type& rhs_type) const noexcept { return m_type == rhs_type; }
+    [[nodiscard]] constexpr bool matches(const Type& rhs_type) const noexcept
+    {
+        return m_type == rhs_type;
+    }
 
-    [[nodiscard]] constexpr static bool is_unary_operator(const Token& token) noexcept {
+    [[nodiscard]] constexpr static bool is_unary_operator(const Token& token) noexcept
+    {
         constexpr std::array<Type, 5> unary_operators = {
-            Type::BANG, Type::MINUS_MINUS, Type::STAR, Type::PLUS_PLUS, Type::AMPERSAND
+            Type::BANG,
+            Type::MINUS_MINUS,
+            Type::STAR,
+            Type::PLUS_PLUS,
+            Type::AMPERSAND,
         };
-        return std::ranges::find(unary_operators, token.type()) != unary_operators.end();
+
+        return std::ranges::find(unary_operators, token.type()) !=
+               unary_operators.end();
     }
 
-    [[nodiscard]] constexpr static bool is_binary_operator(const Token& token) noexcept {
-        constexpr std::array<Type, 11> binary_operators = { Type::BANG_EQUAL,    Type::EQUAL_EQUAL, Type::GREATER,
-                                                            Type::GREATER_EQUAL, Type::LESS,        Type::LESS_EQUAL,
-                                                            Type::MINUS,         Type::PLUS,        Type::STAR,
-                                                            Type::COLON_COLON,   Type::DOT };
-        return std::ranges::find(binary_operators, token.type()) != binary_operators.end();
+    [[nodiscard]] constexpr static bool is_binary_operator(const Token& token) noexcept
+    {
+        constexpr std::array<Type, 11> binary_operators = {
+            Type::BANG_EQUAL,
+            Type::EQUAL_EQUAL,
+            Type::GREATER,
+            Type::GREATER_EQUAL,
+            Type::LESS,
+            Type::LESS_EQUAL,
+            Type::MINUS,
+            Type::PLUS,
+            Type::STAR,
+            Type::COLON_COLON,
+            Type::DOT,
+        };
+
+        return std::ranges::find(binary_operators, token.type()) !=
+               binary_operators.end();
     }
 
-    [[nodiscard]] constexpr static std::optional<Type> is_keyword(const std::string& lexeme) noexcept {
+    [[nodiscard]] constexpr static std::optional<Type> is_keyword(const std::string& lexeme) noexcept
+    {
         if (lexeme == "fn") {
             return Type::FN;
         } else if (lexeme == "if") {
@@ -130,7 +158,8 @@ class [[nodiscard]] Token {
     }
 
 
-    [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept {
+    [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
+    {
         switch (type) {
             case Type::FN: {
                 return "fn";
@@ -243,30 +272,39 @@ class [[nodiscard]] Token {
 };
 
 // {fmt} formatters
-template<>
-struct fmt::formatter<Token::Type> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) {
+template <>
+struct fmt::formatter<Token::Type>
+{
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx)
+    {
         return ctx.begin();
     }
 
-    template<typename FormatContext>
-    auto format(const Token::Type& type, FormatContext& ctx) {
+    template <typename FormatContext>
+    auto format(const Token::Type& type, FormatContext& ctx)
+    {
         return fmt::format_to(ctx.out(), "{}", Token::type_to_string(type));
     }
 };
 
-template<>
-struct fmt::formatter<Token> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) {
+template <>
+struct fmt::formatter<Token>
+{
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx)
+    {
         return ctx.begin();
     }
 
-    template<typename FormatContext>
-    auto format(const Token& token, FormatContext& ctx) {
+    template <typename FormatContext>
+    auto format(const Token& token, FormatContext& ctx)
+    {
         return fmt::format_to(
-          ctx.out(), "{{ TokenType: {}, Lexeme: {}, Position: {} }}", token.type(), token.lexeme(), token.position()
-        );
+            ctx.out(),
+            "{{ TokenType: {}, Lexeme: {}, Position: {} }}",
+            token.type(),
+            token.lexeme(),
+            token.position());
     }
 };

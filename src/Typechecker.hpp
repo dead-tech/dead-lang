@@ -4,9 +4,11 @@
 #include <optional>
 #include <string>
 
-class [[nodiscard]] Typechecker {
+class [[nodiscard]] Typechecker
+{
   public:
-    enum class BuiltinType : std::uint8_t {
+    enum class BuiltinType : std::uint8_t
+    {
         U8 = 0,
         I8,
         U16,
@@ -22,7 +24,8 @@ class [[nodiscard]] Typechecker {
         NONE,
     };
 
-    struct [[nodiscard]] VariableDeclaration {
+    struct [[nodiscard]] VariableDeclaration
+    {
         BuiltinType                type;
         std::string                type_extensions;
         bool                       is_mutable;
@@ -30,7 +33,8 @@ class [[nodiscard]] Typechecker {
         std::optional<std::string> custom_type;
     };
 
-    [[nodiscard]] static constexpr BuiltinType builtin_type_from_string(const std::string& type) noexcept {
+    [[nodiscard]] static constexpr BuiltinType builtin_type_from_string(const std::string& type) noexcept
+    {
         if (type == "u8") {
             return BuiltinType::U8;
         } else if (type == "i8") {
@@ -56,7 +60,8 @@ class [[nodiscard]] Typechecker {
         }
     }
 
-    [[nodiscard]] static constexpr std::string builtin_type_to_string(const BuiltinType& type) noexcept {
+    [[nodiscard]] static constexpr std::string builtin_type_to_string(const BuiltinType& type) noexcept
+    {
         switch (type) {
             case BuiltinType::U8: {
                 return "u8";
@@ -97,7 +102,8 @@ class [[nodiscard]] Typechecker {
         }
     }
 
-    [[nodiscard]] static constexpr std::string builtin_type_to_c_type(const BuiltinType& type) noexcept {
+    [[nodiscard]] static constexpr std::string builtin_type_to_c_type(const BuiltinType& type) noexcept
+    {
         switch (type) {
             case BuiltinType::U8: {
                 return "unsigned char";
@@ -138,11 +144,14 @@ class [[nodiscard]] Typechecker {
         }
     }
 
-    [[nodiscard]] static constexpr std::string builtin_type_to_c_type(const std::string& type) noexcept {
+    [[nodiscard]] static constexpr std::string builtin_type_to_c_type(const std::string& type) noexcept
+    {
         return builtin_type_to_c_type(builtin_type_from_string(type));
     }
 
-    [[nodiscard]] static constexpr bool is_fixed_size_array(const std::string& type_extensions) {
-        return !type_extensions.empty() && type_extensions.front() == '[' && type_extensions.back() == ']';
+    [[nodiscard]] static constexpr bool is_fixed_size_array(const std::string& type_extensions)
+    {
+        return !type_extensions.empty() && type_extensions.front() == '[' &&
+               type_extensions.back() == ']';
     }
 };

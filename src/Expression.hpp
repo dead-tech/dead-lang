@@ -6,7 +6,8 @@
 
 #include "Token.hpp"
 
-class [[nodiscard]] Expression {
+class [[nodiscard]] Expression
+{
   public:
     Expression() = default;
 
@@ -23,7 +24,8 @@ class [[nodiscard]] Expression {
     [[nodiscard]] virtual std::string evaluate() const noexcept = 0;
 };
 
-class [[nodiscard]] UnaryExpression final : public Expression {
+class [[nodiscard]] UnaryExpression final : public Expression
+{
   public:
     UnaryExpression(Token::Type unary_operator, std::shared_ptr<Expression> right) noexcept;
 
@@ -34,7 +36,8 @@ class [[nodiscard]] UnaryExpression final : public Expression {
     std::shared_ptr<Expression> m_right;
 };
 
-class [[nodiscard]] VariableExpression final : public Expression {
+class [[nodiscard]] VariableExpression final : public Expression
+{
   public:
     explicit VariableExpression(std::string variable_name) noexcept;
 
@@ -44,13 +47,13 @@ class [[nodiscard]] VariableExpression final : public Expression {
     std::string m_variable_name;
 };
 
-class [[nodiscard]] BinaryExpression final : public Expression {
+class [[nodiscard]] BinaryExpression final : public Expression
+{
   public:
     BinaryExpression(
-      std::shared_ptr<Expression> left,
-      Token::Type                 binary_operator,
-      std::shared_ptr<Expression> right
-    ) noexcept;
+        std::shared_ptr<Expression> left,
+        Token::Type                 binary_operator,
+        std::shared_ptr<Expression> right) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
@@ -60,7 +63,8 @@ class [[nodiscard]] BinaryExpression final : public Expression {
     std::shared_ptr<Expression> m_right;
 };
 
-class [[nodiscard]] LiteralExpression final : public Expression {
+class [[nodiscard]] LiteralExpression final : public Expression
+{
   public:
     explicit LiteralExpression(std::string literal) noexcept;
 
@@ -70,7 +74,8 @@ class [[nodiscard]] LiteralExpression final : public Expression {
     std::string m_literal;
 };
 
-class [[nodiscard]] FunctionCallExpression final : public Expression {
+class [[nodiscard]] FunctionCallExpression final : public Expression
+{
   public:
     FunctionCallExpression(std::string function_name, std::vector<std::shared_ptr<Expression>> arguments) noexcept;
 
@@ -81,7 +86,8 @@ class [[nodiscard]] FunctionCallExpression final : public Expression {
     std::vector<std::shared_ptr<Expression>> m_arguments;
 };
 
-class [[nodiscard]] IndexOperatorExpression final : public Expression {
+class [[nodiscard]] IndexOperatorExpression final : public Expression
+{
   public:
     IndexOperatorExpression(std::string variable_name, std::shared_ptr<Expression> index) noexcept;
 

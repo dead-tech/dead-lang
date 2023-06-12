@@ -13,7 +13,8 @@
 #include "Expression.hpp"
 #include "Typechecker.hpp"
 
-class [[nodiscard]] Statement {
+class [[nodiscard]] Statement
+{
   public:
     Statement() = default;
 
@@ -30,20 +31,25 @@ class [[nodiscard]] Statement {
     [[nodiscard]] virtual std::string evaluate() const noexcept = 0;
 };
 
-class [[nodiscard]] EmptyStatement final : public Statement {
+class [[nodiscard]] EmptyStatement final : public Statement
+{
   public:
     EmptyStatement() noexcept = default;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 };
 
-class [[nodiscard]] BlockStatement final : public Statement {
+class [[nodiscard]] BlockStatement final : public Statement
+{
   public:
     explicit BlockStatement(std::vector<std::shared_ptr<Statement>> block) noexcept;
 
     [[nodiscard]] auto empty() const noexcept;
 
-    [[nodiscard]] const std::vector<std::shared_ptr<Statement>>& data() const noexcept { return m_block; }
+    [[nodiscard]] const std::vector<std::shared_ptr<Statement>>& data() const noexcept
+    {
+        return m_block;
+    }
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
@@ -53,14 +59,14 @@ class [[nodiscard]] BlockStatement final : public Statement {
     std::vector<std::shared_ptr<Statement>> m_block;
 };
 
-class [[nodiscard]] ModuleStatement final : public Statement {
+class [[nodiscard]] ModuleStatement final : public Statement
+{
   public:
     explicit ModuleStatement(
-      std::string              name,
-      std::vector<std::string> c_includes,
-      BlockStatement           structs,
-      BlockStatement           functions
-    ) noexcept;
+        std::string              name,
+        std::vector<std::string> c_includes,
+        BlockStatement           structs,
+        BlockStatement           functions) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
@@ -71,14 +77,14 @@ class [[nodiscard]] ModuleStatement final : public Statement {
     BlockStatement           m_functions;
 };
 
-class [[nodiscard]] FunctionStatement final : public Statement {
+class [[nodiscard]] FunctionStatement final : public Statement
+{
   public:
     FunctionStatement(
-      std::string                                   name,
-      std::vector<Typechecker::VariableDeclaration> args,
-      std::string                                   return_type,
-      BlockStatement                                body
-    ) noexcept;
+        std::string                                   name,
+        std::vector<Typechecker::VariableDeclaration> args,
+        std::string                                   return_type,
+        BlockStatement                                body) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
@@ -89,7 +95,8 @@ class [[nodiscard]] FunctionStatement final : public Statement {
     BlockStatement                                m_body;
 };
 
-class [[nodiscard]] IfStatement final : public Statement {
+class [[nodiscard]] IfStatement final : public Statement
+{
   public:
     IfStatement(std::shared_ptr<Expression> condition, BlockStatement then_block, BlockStatement else_block) noexcept;
 
@@ -101,7 +108,8 @@ class [[nodiscard]] IfStatement final : public Statement {
     BlockStatement              m_else_block;
 };
 
-class [[nodiscard]] ReturnStatement final : public Statement {
+class [[nodiscard]] ReturnStatement final : public Statement
+{
   public:
     explicit ReturnStatement(std::shared_ptr<Expression> expression) noexcept;
 
@@ -111,7 +119,8 @@ class [[nodiscard]] ReturnStatement final : public Statement {
     std::shared_ptr<Expression> m_expression;
 };
 
-class [[nodiscard]] VariableStatement final : public Statement {
+class [[nodiscard]] VariableStatement final : public Statement
+{
   public:
     VariableStatement(Typechecker::VariableDeclaration variable, std::shared_ptr<Expression> expression) noexcept;
 
@@ -122,7 +131,8 @@ class [[nodiscard]] VariableStatement final : public Statement {
     std::shared_ptr<Expression>      m_expression;
 };
 
-class [[nodiscard]] PlusEqualStatement final : public Statement {
+class [[nodiscard]] PlusEqualStatement final : public Statement
+{
   public:
     PlusEqualStatement(std::string name, std::shared_ptr<Expression> expression) noexcept;
 
@@ -133,7 +143,8 @@ class [[nodiscard]] PlusEqualStatement final : public Statement {
     std::shared_ptr<Expression> m_expression;
 };
 
-class [[nodiscard]] WhileStatement final : public Statement {
+class [[nodiscard]] WhileStatement final : public Statement
+{
   public:
     WhileStatement(std::shared_ptr<Expression> condition, BlockStatement body) noexcept;
 
@@ -144,14 +155,14 @@ class [[nodiscard]] WhileStatement final : public Statement {
     BlockStatement              m_body;
 };
 
-class [[nodiscard]] ForStatement final : public Statement {
+class [[nodiscard]] ForStatement final : public Statement
+{
   public:
     ForStatement(
-      std::shared_ptr<Statement>  init_statement,
-      std::shared_ptr<Expression> condition,
-      std::shared_ptr<Expression> increment_statement,
-      BlockStatement              body
-    ) noexcept;
+        std::shared_ptr<Statement>  init_statement,
+        std::shared_ptr<Expression> condition,
+        std::shared_ptr<Expression> increment_statement,
+        BlockStatement              body) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
@@ -162,7 +173,8 @@ class [[nodiscard]] ForStatement final : public Statement {
     BlockStatement              m_body;
 };
 
-class [[nodiscard]] ExpressionStatement final : public Statement {
+class [[nodiscard]] ExpressionStatement final : public Statement
+{
   public:
     explicit ExpressionStatement(std::shared_ptr<Expression> expression) noexcept;
 
@@ -172,12 +184,12 @@ class [[nodiscard]] ExpressionStatement final : public Statement {
     std::shared_ptr<Expression> m_expression;
 };
 
-class [[nodiscard]] ArrayStatement final : public Statement {
+class [[nodiscard]] ArrayStatement final : public Statement
+{
   public:
     ArrayStatement(
-      Typechecker::VariableDeclaration         variable_declaration,
-      std::vector<std::shared_ptr<Expression>> elements
-    ) noexcept;
+        Typechecker::VariableDeclaration         variable_declaration,
+        std::vector<std::shared_ptr<Expression>> elements) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
@@ -186,13 +198,13 @@ class [[nodiscard]] ArrayStatement final : public Statement {
     std::vector<std::shared_ptr<Expression>> m_elements;
 };
 
-class [[nodiscard]] IndexOperatorStatement final : public Statement {
+class [[nodiscard]] IndexOperatorStatement final : public Statement
+{
   public:
     IndexOperatorStatement(
-      std::string                 variable_name,
-      std::shared_ptr<Expression> index,
-      std::shared_ptr<Expression> expression
-    ) noexcept;
+        std::string                 variable_name,
+        std::shared_ptr<Expression> index,
+        std::shared_ptr<Expression> expression) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
@@ -202,7 +214,8 @@ class [[nodiscard]] IndexOperatorStatement final : public Statement {
     std::shared_ptr<Expression> m_expression;
 };
 
-class [[nodiscard]] StructStatement final : public Statement {
+class [[nodiscard]] StructStatement final : public Statement
+{
   public:
     StructStatement(std::string name, std::vector<Typechecker::VariableDeclaration> member_variables) noexcept;
 

@@ -13,10 +13,11 @@
 #include "Supervisor.hpp"
 #include "Token.hpp"
 
-class [[nodiscard]] Lexer : public Iterator<std::string> {
+class [[nodiscard]] Lexer : public Iterator<std::string>
+{
   public:
     [[nodiscard]] static std::vector<Token>
-      lex(std::string source, const std::shared_ptr<Supervisor>& supervisor) noexcept;
+    lex(std::string source, const std::shared_ptr<Supervisor>& supervisor) noexcept;
 
   private:
     explicit Lexer(std::string&& source, const std::shared_ptr<Supervisor>& supervisor) noexcept;
@@ -45,7 +46,7 @@ class [[nodiscard]] Lexer : public Iterator<std::string> {
 
     [[nodiscard]] Token lex_colon() noexcept;
 
-    template<std::invocable<char> Callable>
+    template <std::invocable<char> Callable>
     void consume_chars(Callable&& callable) noexcept;
 
     std::shared_ptr<Supervisor> m_supervisor;

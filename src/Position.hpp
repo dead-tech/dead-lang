@@ -4,13 +4,17 @@
 
 #include <fmt/format.h>
 
-class [[nodiscard]] Position {
+class [[nodiscard]] Position
+{
   public:
     [[nodiscard]] static Position create(const std::size_t start, const std::size_t end) noexcept;
 
     [[nodiscard]] static Position create_dumb() noexcept;
 
-    [[nodiscard]] constexpr std::size_t start() const noexcept { return m_start; }
+    [[nodiscard]] constexpr std::size_t start() const noexcept
+    {
+        return m_start;
+    }
 
     [[nodiscard]] constexpr std::size_t end() const noexcept { return m_end; }
 
@@ -22,15 +26,19 @@ class [[nodiscard]] Position {
 };
 
 // {fmt} formatters
-template<>
-struct fmt::formatter<Position> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) {
+template <>
+struct fmt::formatter<Position>
+{
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx)
+    {
         return ctx.begin();
     }
 
-    template<typename FormatContext>
-    auto format(const Position& position, FormatContext& ctx) {
-        return fmt::format_to(ctx.out(), "{{ start: {}, end: {} }}", position.start(), position.end());
+    template <typename FormatContext>
+    auto format(const Position& position, FormatContext& ctx)
+    {
+        return fmt::format_to(
+            ctx.out(), "{{ start: {}, end: {} }}", position.start(), position.end());
     }
 };
