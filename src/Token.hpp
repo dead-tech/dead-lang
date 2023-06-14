@@ -80,6 +80,7 @@ class [[nodiscard]] Token
         // Magic tokens
         END_OF_LINE,
         END_OF_FILE,
+        MAX,
     };
 
     [[nodiscard]] static Token create(Type type, std::string lexeme, Position position) noexcept;
@@ -112,6 +113,7 @@ class [[nodiscard]] Token
         if (lexeme == "struct") { return Type::STRUCT; }
         if (lexeme == "true") { return Type::TRUE; }
         if (lexeme == "false") { return Type::FALSE; }
+        if (lexeme == "class") { return Type::CLASS; }
         return {};
     }
 
@@ -181,6 +183,8 @@ class [[nodiscard]] Token
 
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
     {
+        static_assert(static_cast<std::uint8_t>(Type::MAX) == 48, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
+
         switch (type) {
             case Type::FN: {
                 return "fn";
@@ -298,6 +302,9 @@ class [[nodiscard]] Token
             }
             case Type::FALSE: {
                 return "false";
+            }
+            case Type::CLASS: {
+                return "class";
             }
             default: {
                 return "not implemented";
