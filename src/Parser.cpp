@@ -73,22 +73,17 @@ std::shared_ptr<Statement> Parser::parse_function_statement() noexcept
     }
 
     // Parse return type
-    std::string return_type;
-    if (!matches_and_consume(Token::Type::ARROW)) {
-        m_supervisor->push_error(
-            "expected '->' arrow after function arguments while parsing",
-            previous_position());
-        return nullptr;
-    }
+    std::string return_type = "void";
+    if (matches_and_consume(Token::Type::ARROW)) {
+        const auto ret_type = next();
+        if (!ret_type || !ret_type->matches(Token::Type::IDENTIFIER)) {
+            m_supervisor->push_error(
+                "expected return type after '->' while parsing", previous_position());
+            return nullptr;
+        }
 
-    const auto ret_type = next();
-    if (!ret_type || !ret_type->matches(Token::Type::IDENTIFIER)) {
-        m_supervisor->push_error(
-            "expected return type after '->' while parsing", previous_position());
-        return nullptr;
+        return_type = ret_type->lexeme();
     }
-
-    return_type = ret_type->lexeme();
 
     // Skip the left brace
     if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
