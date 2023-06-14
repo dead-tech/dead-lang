@@ -51,10 +51,9 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] std::shared_ptr<Expression> parse_and_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_equality_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_comparison_expression();
-    [[nodiscard]] std::shared_ptr<Expression> parse_addition_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_arithmetic_operator_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_index_operator_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_field_accessors_expression();
-    [[nodiscard]] std::shared_ptr<Expression> parse_factor_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_unary_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_function_call_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_primary_expression();

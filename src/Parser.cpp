@@ -580,12 +580,12 @@ std::shared_ptr<Expression> Parser::parse_equality_expression()
 
 std::shared_ptr<Expression> Parser::parse_comparison_expression()
 {
-    auto expression = parse_addition_expression();
+    auto expression = parse_arithmetic_operator_expression();
 
     auto comparison_operator = peek();
     while (Token::is_comparison_operator(*comparison_operator)) {
         advance(1);
-        auto right = parse_addition_expression();
+        auto right = parse_arithmetic_operator_expression();
         if (!right) {
             m_supervisor->push_error(
                 "expected expression after comparison operator while parsing",
@@ -601,23 +601,28 @@ std::shared_ptr<Expression> Parser::parse_comparison_expression()
     return expression;
 }
 
-std::shared_ptr<Expression> Parser::parse_addition_expression()
+std::shared_ptr<Expression> Parser::parse_arithmetic_operator_expression()
 {
     auto expression = parse_index_operator_expression();
 
-    while (matches_and_consume(Token::Type::PLUS) ||
-           matches_and_consume(Token::Type::MINUS)) {
-        const auto addition_operator = previous();
-        auto       right             = parse_index_operator_expression();
+    auto arithmetic_operator = peek();
+    while (Token::is_arithmetic_operator(*arithmetic_operator)) {
+        advance(1); // Skip the arithmetic operator
+
+        auto right = parse_index_operator_expression();
         if (!right) {
             m_supervisor->push_error(
-                "expected expression after addition operator while parsing",
-                addition_operator->position());
+                fmt::format(
+                    "expected expression after '{}' arithmetic operator while "
+                    "parsing",
+                    arithmetic_operator->lexeme()),
+                arithmetic_operator->position());
             return nullptr;
         }
 
         expression = std::make_shared<BinaryExpression>(BinaryExpression(
-            std::move(expression), addition_operator->type(), std::move(right)));
+            std::move(expression), arithmetic_operator->type(), std::move(right)));
+        arithmetic_operator = peek();
     }
 
     return expression;
@@ -651,12 +656,12 @@ std::shared_ptr<Expression> Parser::parse_index_operator_expression()
 
 std::shared_ptr<Expression> Parser::parse_field_accessors_expression()
 {
-    auto expression = parse_factor_expression();
+    auto expression = parse_unary_expression();
 
     auto field_accessor = peek();
     while (Token::is_field_accessor(*field_accessor)) {
         advance(1);
-        auto right = parse_factor_expression();
+        auto right = parse_unary_expression();
         if (!right) {
             m_supervisor->push_error(
                 fmt::format(
@@ -669,29 +674,6 @@ std::shared_ptr<Expression> Parser::parse_field_accessors_expression()
         expression     = std::make_shared<BinaryExpression>(BinaryExpression(
             std::move(expression), field_accessor->type(), std::move(right)));
         field_accessor = peek();
-    }
-
-    return expression;
-}
-
-std::shared_ptr<Expression> Parser::parse_factor_expression()
-{
-    auto expression = parse_unary_expression();
-
-    while (matches_and_consume(Token::Type::STAR) ||
-           matches_and_consume(Token::Type::SLASH)) {
-        const auto multiplication_operator = previous();
-        auto       right                   = parse_unary_expression();
-        if (!right) {
-            m_supervisor->push_error(
-                "expected expression after multiplication operator while "
-                "parsing",
-                multiplication_operator->position());
-            return nullptr;
-        }
-
-        expression = std::make_shared<BinaryExpression>(BinaryExpression(
-            std::move(expression), multiplication_operator->type(), std::move(right)));
     }
 
     return expression;

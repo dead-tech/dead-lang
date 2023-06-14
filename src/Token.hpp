@@ -188,6 +188,19 @@ class [[nodiscard]] Token
                token.matches(Token::Type::COLON_COLON);
     }
 
+    [[nodiscard]] constexpr static bool is_arithmetic_operator(const Token& token) noexcept
+    {
+        constexpr std::array<Type, 4> arithmetic_operators = {
+            Type::PLUS,
+            Type::MINUS,
+            Type::STAR,
+            Type::SLASH,
+        };
+
+        return std::ranges::find(arithmetic_operators, token.type()) !=
+               arithmetic_operators.end();
+    }
+
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
     {
         static_assert(static_cast<std::uint8_t>(Type::MAX) == 48, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
