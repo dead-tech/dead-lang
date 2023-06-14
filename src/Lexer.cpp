@@ -114,6 +114,9 @@ Token Lexer::next_token()
         case ':': {
             return lex_colon();
         }
+        case '!': {
+            return lex_bang();
+        }
         default: {
             return lex_keyword_or_identifier();
         }
@@ -332,6 +335,19 @@ Token Lexer::lex_slash() noexcept
 
     advance(1);
     return Token::create(Token::Type::SLASH, "/", Position::create(start, cursor()));
+}
+Token Lexer::lex_bang() noexcept
+{
+    const auto start = cursor();
+
+    if (const auto ch = peek_ahead(1); ch == '=') {
+        advance(2);
+        return Token::create(
+            Token::Type::BANG_EQUAL, "!=", Position::create(start, cursor()));
+    }
+
+    advance(1);
+    return Token::create(Token::Type::BANG, "!", Position::create(start, cursor()));
 }
 
 template <std::invocable<char> Callable>

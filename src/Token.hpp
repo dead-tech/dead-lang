@@ -274,6 +274,9 @@ class [[nodiscard]] Token
             case Type::SLASH: {
                 return "/";
             }
+            case Type::BANG_EQUAL: {
+                return "!=";
+            }
             default: {
                 return "not implemented";
             }
