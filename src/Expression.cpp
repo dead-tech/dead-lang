@@ -124,11 +124,18 @@ LogicalExpression::LogicalExpression(
 
 std::string LogicalExpression::evaluate() const noexcept
 {
-    return fmt::format(
-        "{} {} {}",
-        m_left->evaluate(),
-        Token::type_to_string(m_operator),
-        m_right->evaluate());
+    const std::string logical_operator = [this] {
+        switch (m_operator) {
+            case Token::Type::AND:
+                return "&&";
+            case Token::Type::OR:
+                return "||";
+            default:
+                return "";
+        }
+    }();
+
+    return fmt::format("{} {} {}", m_left->evaluate(), logical_operator, m_right->evaluate());
 }
 
 GroupingExpression::GroupingExpression(std::shared_ptr<Expression> expression) noexcept

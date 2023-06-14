@@ -536,7 +536,7 @@ std::shared_ptr<Expression> Parser::parse_logical_expression()
         }
 
         expression = std::make_shared<LogicalExpression>(LogicalExpression(
-            std::move(expression), Token::Type::OR, std::move(right)));
+            std::move(expression), logical_operator->type(), std::move(right)));
         logical_operator = peek();
     }
 

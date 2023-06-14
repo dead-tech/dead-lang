@@ -114,6 +114,8 @@ class [[nodiscard]] Token
         if (lexeme == "true") { return Type::TRUE; }
         if (lexeme == "false") { return Type::FALSE; }
         if (lexeme == "class") { return Type::CLASS; }
+        if (lexeme == "and") { return Type::AND; }
+        if (lexeme == "or") { return Type::OR; }
         return {};
     }
 
@@ -330,6 +332,12 @@ class [[nodiscard]] Token
             }
             case Type::CLASS: {
                 return "class";
+            }
+            case Type::AND: {
+                return "and";
+            }
+            case Type::OR: {
+                return "or";
             }
             default: {
                 return "not implemented";
