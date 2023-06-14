@@ -117,6 +117,9 @@ Token Lexer::next_token()
         case '!': {
             return lex_bang();
         }
+        case '>': {
+            return lex_greater_than();
+        }
         default: {
             return lex_keyword_or_identifier();
         }
@@ -348,6 +351,19 @@ Token Lexer::lex_bang() noexcept
 
     advance(1);
     return Token::create(Token::Type::BANG, "!", Position::create(start, cursor()));
+}
+Token Lexer::lex_greater_than() noexcept
+{
+    const auto start = cursor();
+
+    if (const auto ch = peek_ahead(1); ch == '=') {
+        advance(2);
+        return Token::create(
+            Token::Type::GREATER_EQUAL, ">=", Position::create(start, cursor()));
+    }
+
+    advance(1);
+    return Token::create(Token::Type::GREATER, ">", Position::create(start, cursor()));
 }
 
 template <std::invocable<char> Callable>

@@ -50,6 +50,8 @@ class [[nodiscard]] Lexer : public Iterator<std::string>
 
     [[nodiscard]] Token lex_bang() noexcept;
 
+    [[nodiscard]] Token lex_greater_than() noexcept;
+
     template <std::invocable<char> Callable>
     void consume_chars(Callable&& callable) noexcept;
 
