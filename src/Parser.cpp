@@ -502,6 +502,12 @@ std::shared_ptr<Expression> Parser::parse_assignment_expression()
         advance(1); // Skip the assignment operator
 
         auto value = parse_assignment_expression();
+        if (!value) {
+            m_supervisor->push_error(
+                "expected expression after assignment operator while parsing",
+                assignment_operator->position());
+            return nullptr;
+        }
 
         const bool is_valid_lhs =
             std::dynamic_pointer_cast<VariableExpression>(expression) ||
@@ -526,6 +532,12 @@ std::shared_ptr<Expression> Parser::parse_or_expression()
 
     while (matches_and_consume(Token::Type::OR)) {
         auto right = parse_and_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after 'or' while parsing", previous_position());
+            return nullptr;
+        }
+
         expression = std::make_shared<LogicalExpression>(LogicalExpression(
             std::move(expression), Token::Type::OR, std::move(right)));
     }
@@ -539,6 +551,12 @@ std::shared_ptr<Expression> Parser::parse_and_expression()
 
     while (matches_and_consume(Token::Type::AND)) {
         auto right = parse_equality_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after 'and' while parsing", previous_position());
+            return nullptr;
+        }
+
         expression = std::make_shared<LogicalExpression>(LogicalExpression(
             std::move(expression), Token::Type::AND, std::move(right)));
     }
@@ -553,7 +571,14 @@ std::shared_ptr<Expression> Parser::parse_equality_expression()
     auto equality_operator = peek();
     while (Token::is_equality_operator(*equality_operator)) {
         advance(1);
-        auto right        = parse_comparison_expression();
+        auto right = parse_comparison_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after equality operator while parsing",
+                equality_operator->position());
+            return nullptr;
+        }
+
         expression        = std::make_shared<BinaryExpression>(BinaryExpression(
             std::move(expression), equality_operator->type(), std::move(right)));
         equality_operator = peek();
@@ -570,6 +595,13 @@ std::shared_ptr<Expression> Parser::parse_comparison_expression()
     while (Token::is_comparison_operator(*comparison_operator)) {
         advance(1);
         auto right = parse_addition_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after comparison operator while parsing",
+                comparison_operator->position());
+            return nullptr;
+        }
+
         expression = std::make_shared<BinaryExpression>(BinaryExpression(
             std::move(expression), comparison_operator->type(), std::move(right)));
         comparison_operator = peek();
@@ -586,6 +618,13 @@ std::shared_ptr<Expression> Parser::parse_addition_expression()
            matches_and_consume(Token::Type::MINUS)) {
         const auto addition_operator = previous();
         auto       right             = parse_index_operator_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after addition operator while parsing",
+                addition_operator->position());
+            return nullptr;
+        }
+
         expression = std::make_shared<BinaryExpression>(BinaryExpression(
             std::move(expression), addition_operator->type(), std::move(right)));
     }
@@ -626,7 +665,14 @@ std::shared_ptr<Expression> Parser::parse_arrow_expression()
     auto arrow_operator = peek();
     while (arrow_operator->matches(Token::Type::ARROW)) {
         advance(1);
-        auto right     = parse_static_accessor_expression();
+        auto right = parse_static_accessor_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after arrow operator while parsing",
+                arrow_operator->position());
+            return nullptr;
+        }
+
         expression     = std::make_shared<BinaryExpression>(BinaryExpression(
             std::move(expression), arrow_operator->type(), std::move(right)));
         arrow_operator = peek();
@@ -642,7 +688,15 @@ std::shared_ptr<Expression> Parser::parse_static_accessor_expression()
     auto arrow_operator = peek();
     while (arrow_operator->matches(Token::Type::COLON_COLON)) {
         advance(1);
-        auto right     = parse_factor_expression();
+        auto right = parse_factor_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after static accessor operator while "
+                "parsing",
+                arrow_operator->position());
+            return nullptr;
+        }
+
         expression     = std::make_shared<BinaryExpression>(BinaryExpression(
             std::move(expression), arrow_operator->type(), std::move(right)));
         arrow_operator = peek();
@@ -659,6 +713,14 @@ std::shared_ptr<Expression> Parser::parse_factor_expression()
            matches_and_consume(Token::Type::SLASH)) {
         const auto multiplication_operator = previous();
         auto       right                   = parse_unary_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after multiplication operator while "
+                "parsing",
+                multiplication_operator->position());
+            return nullptr;
+        }
+
         expression = std::make_shared<BinaryExpression>(BinaryExpression(
             std::move(expression), multiplication_operator->type(), std::move(right)));
     }
@@ -671,6 +733,13 @@ std::shared_ptr<Expression> Parser::parse_unary_expression()
     if (const auto unary_operator = peek(); Token::is_unary_operator(*unary_operator)) {
         advance(1); // consume the operator
         auto right = parse_unary_expression();
+        if (!right) {
+            m_supervisor->push_error(
+                "expected expression after unary operator while parsing",
+                unary_operator->position());
+            return nullptr;
+        }
+
         return std::make_shared<UnaryExpression>(
             UnaryExpression(unary_operator->type(), std::move(right)));
     }
