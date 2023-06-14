@@ -182,6 +182,12 @@ class [[nodiscard]] Token
         return token.type() == Type::TRUE || token.type() == Type::FALSE;
     }
 
+    [[nodiscard]] constexpr static bool is_field_accessor(const Token& token) noexcept
+    {
+        return token.matches(Token::Type::DOT) || token.matches(Token::Type::ARROW) ||
+               token.matches(Token::Type::COLON_COLON);
+    }
+
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
     {
         static_assert(static_cast<std::uint8_t>(Type::MAX) == 48, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT

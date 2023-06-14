@@ -625,7 +625,7 @@ std::shared_ptr<Expression> Parser::parse_addition_expression()
 
 std::shared_ptr<Expression> Parser::parse_index_operator_expression()
 {
-    auto expression = parse_arrow_expression();
+    auto expression = parse_field_accessors_expression();
 
     while (matches_and_consume(Token::Type::LEFT_BRACKET)) {
         auto index = parse_expression();
@@ -649,48 +649,26 @@ std::shared_ptr<Expression> Parser::parse_index_operator_expression()
     return expression;
 }
 
-std::shared_ptr<Expression> Parser::parse_arrow_expression()
-{
-    auto expression = parse_static_accessor_expression();
-
-    auto arrow_operator = peek();
-    while (arrow_operator->matches(Token::Type::ARROW)) {
-        advance(1);
-        auto right = parse_static_accessor_expression();
-        if (!right) {
-            m_supervisor->push_error(
-                "expected expression after arrow operator while parsing",
-                arrow_operator->position());
-            return nullptr;
-        }
-
-        expression     = std::make_shared<BinaryExpression>(BinaryExpression(
-            std::move(expression), arrow_operator->type(), std::move(right)));
-        arrow_operator = peek();
-    }
-
-    return expression;
-}
-
-std::shared_ptr<Expression> Parser::parse_static_accessor_expression()
+std::shared_ptr<Expression> Parser::parse_field_accessors_expression()
 {
     auto expression = parse_factor_expression();
 
-    auto arrow_operator = peek();
-    while (arrow_operator->matches(Token::Type::COLON_COLON)) {
+    auto field_accessor = peek();
+    while (Token::is_field_accessor(*field_accessor)) {
         advance(1);
         auto right = parse_factor_expression();
         if (!right) {
             m_supervisor->push_error(
-                "expected expression after static accessor operator while "
-                "parsing",
-                arrow_operator->position());
+                fmt::format(
+                    "expected expression after '{}' while parsing",
+                    field_accessor->lexeme()),
+                field_accessor->position());
             return nullptr;
         }
 
         expression     = std::make_shared<BinaryExpression>(BinaryExpression(
-            std::move(expression), arrow_operator->type(), std::move(right)));
-        arrow_operator = peek();
+            std::move(expression), field_accessor->type(), std::move(right)));
+        field_accessor = peek();
     }
 
     return expression;
