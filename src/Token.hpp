@@ -165,11 +165,12 @@ class [[nodiscard]] Token
 
     [[nodiscard]] constexpr static bool is_unary_operator(const Token& token) noexcept
     {
-        constexpr std::array<Type, 4> unary_operators = {
+        constexpr std::array<Type, 5> unary_operators = {
             Type::MINUS,
             Type::BANG,
             Type::PLUS_PLUS,
             Type::AMPERSAND,
+            Type::STAR,
         };
 
         return std::ranges::find(unary_operators, token.type()) !=
