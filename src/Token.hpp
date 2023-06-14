@@ -59,13 +59,13 @@ class [[nodiscard]] Token
         AND,
         CLASS,
         ELSE,
+        TRUE,
         FALSE,
         FN,
         FOR,
         IF,
         OR,
         RETURN,
-        TRUE,
         WHILE,
         MUT,
         C_INCLUDE,
@@ -110,6 +110,8 @@ class [[nodiscard]] Token
         if (lexeme == "for") { return Type::FOR; }
         if (lexeme == "include") { return Type::C_INCLUDE; }
         if (lexeme == "struct") { return Type::STRUCT; }
+        if (lexeme == "true") { return Type::TRUE; }
+        if (lexeme == "false") { return Type::FALSE; }
         return {};
     }
 
@@ -170,6 +172,11 @@ class [[nodiscard]] Token
 
         return std::ranges::find(unary_operators, token.type()) !=
                unary_operators.end();
+    }
+
+    [[nodiscard]] constexpr static bool is_boolean(const Token& token) noexcept
+    {
+        return token.type() == Type::TRUE || token.type() == Type::FALSE;
     }
 
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
@@ -285,6 +292,12 @@ class [[nodiscard]] Token
             }
             case Type::GREATER_EQUAL: {
                 return ">=";
+            }
+            case Type::TRUE: {
+                return "true";
+            }
+            case Type::FALSE: {
+                return "false";
             }
             default: {
                 return "not implemented";

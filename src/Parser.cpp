@@ -777,6 +777,10 @@ std::shared_ptr<Expression> Parser::parse_primary_expression()
         return std::make_shared<LiteralExpression>(current_token->lexeme());
     }
 
+    if (Token::is_boolean(*current_token)) {
+        return std::make_shared<LiteralExpression>(current_token->lexeme());
+    }
+
     if (current_token->matches(Token::Type::IDENTIFIER)) {
         return std::make_shared<VariableExpression>(current_token->lexeme());
     }

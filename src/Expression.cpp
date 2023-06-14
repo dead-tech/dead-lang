@@ -58,7 +58,12 @@ LiteralExpression::LiteralExpression(std::string literal) noexcept
 {
 }
 
-std::string LiteralExpression::evaluate() const noexcept { return m_literal; }
+std::string LiteralExpression::evaluate() const noexcept
+{
+    if (m_literal == "true") { return "1"; }
+    if (m_literal == "false") { return "0"; }
+    return m_literal;
+}
 
 FunctionCallExpression::FunctionCallExpression(
     std::shared_ptr<Expression>              function_name,
