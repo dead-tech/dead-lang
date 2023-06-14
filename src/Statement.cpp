@@ -293,7 +293,7 @@ std::string StructStatement::evaluate() const noexcept
     c_struct_code += fmt::format("\n{} {}_new(", m_name, m_name);
     for (const auto& member_variable : m_member_variables) {
         c_struct_code +=
-            fmt::format("{}", transpile_variable_declaration(member_variable));
+            fmt::format("{}", transpile_variable_declaration(member_variable, true));
         if (&member_variable != &m_member_variables.back()) {
             c_struct_code += ", ";
         }
