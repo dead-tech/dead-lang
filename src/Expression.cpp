@@ -8,7 +8,7 @@ UnaryExpression::UnaryExpression(Token::Type unary_operator, std::shared_ptr<Exp
 
 std::string UnaryExpression::evaluate() const noexcept
 {
-    return fmt::format("({}{})", Token::type_to_string(m_operator), m_right->evaluate());
+    return fmt::format("{}{}", Token::type_to_string(m_operator), m_right->evaluate());
 }
 
 VariableExpression::VariableExpression(std::string variable_name) noexcept
@@ -45,7 +45,7 @@ std::string BinaryExpression::evaluate() const noexcept
         }
         default: {
             return fmt::format(
-                "({} {} {})",
+                "{} {} {}",
                 m_left->evaluate(),
                 Token::type_to_string(m_operator),
                 m_right->evaluate());
@@ -61,7 +61,7 @@ LiteralExpression::LiteralExpression(std::string literal) noexcept
 std::string LiteralExpression::evaluate() const noexcept { return m_literal; }
 
 FunctionCallExpression::FunctionCallExpression(
-    std::string                              function_name,
+    std::shared_ptr<Expression>              function_name,
     std::vector<std::shared_ptr<Expression>> arguments) noexcept
     : m_function_name{std::move(function_name)},
       m_arguments{std::move(arguments)}
@@ -70,7 +70,7 @@ FunctionCallExpression::FunctionCallExpression(
 
 std::string FunctionCallExpression::evaluate() const noexcept
 {
-    std::string c_function_call_code = fmt::format("{}(", m_function_name);
+    std::string c_function_call_code = fmt::format("{}(", m_function_name->evaluate());
     for (const auto& argument : m_arguments) {
         c_function_call_code += argument->evaluate();
         if (&argument != &m_arguments.back()) { c_function_call_code += ", "; }
@@ -78,15 +78,17 @@ std::string FunctionCallExpression::evaluate() const noexcept
     c_function_call_code += ")";
     return c_function_call_code;
 }
-IndexOperatorExpression::IndexOperatorExpression(std::string left, std::shared_ptr<Expression> right) noexcept
-    : m_variable_name{std::move(left)},
+IndexOperatorExpression::IndexOperatorExpression(
+    std::shared_ptr<Expression> variable_name,
+    std::shared_ptr<Expression> right) noexcept
+    : m_variable_name{std::move(variable_name)},
       m_index{std::move(right)}
 {
 }
 
 std::string IndexOperatorExpression::evaluate() const noexcept
 {
-    return fmt::format("{}[{}]", m_variable_name, m_index->evaluate());
+    return fmt::format("{}[{}]", m_variable_name->evaluate(), m_index->evaluate());
 }
 
 AssignmentExpression::AssignmentExpression(
@@ -102,8 +104,34 @@ AssignmentExpression::AssignmentExpression(
 std::string AssignmentExpression::evaluate() const noexcept
 {
     return fmt::format(
-        "({} {} {})",
-        m_lhs->evaluate(),
+        "{} {} {}", m_lhs->evaluate(), Token::type_to_string(m_operator), m_rhs->evaluate());
+}
+
+LogicalExpression::LogicalExpression(
+    std::shared_ptr<Expression> left,
+    Token::Type                 logical_operator,
+    std::shared_ptr<Expression> right) noexcept
+    : m_left{std::move(left)},
+      m_operator{logical_operator},
+      m_right{std::move(right)}
+{
+}
+
+std::string LogicalExpression::evaluate() const noexcept
+{
+    return fmt::format(
+        "{} {} {}",
+        m_left->evaluate(),
         Token::type_to_string(m_operator),
-        m_rhs->evaluate());
+        m_right->evaluate());
+}
+
+GroupingExpression::GroupingExpression(std::shared_ptr<Expression> expression) noexcept
+    : m_expression{std::move(expression)}
+{
+}
+
+std::string GroupingExpression::evaluate() const noexcept
+{
+    return fmt::format("({})", m_expression->evaluate());
 }

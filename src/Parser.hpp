@@ -47,10 +47,18 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     // Expressions
     [[nodiscard]] std::shared_ptr<Expression> parse_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_assignment_expression();
-    [[nodiscard]] std::shared_ptr<Expression> parse_unary_expression();
-    [[nodiscard]] std::shared_ptr<Expression> parse_expression_operand();
-    [[nodiscard]] std::shared_ptr<Expression> parse_function_call_expression() noexcept;
+    [[nodiscard]] std::shared_ptr<Expression> parse_or_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_and_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_equality_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_comparison_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_addition_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_index_operator_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_arrow_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_static_accessor_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_factor_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_unary_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_function_call_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_primary_expression();
 
 
     // Expression / Statement Utilities

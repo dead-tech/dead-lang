@@ -100,41 +100,6 @@ class [[nodiscard]] Token
         return m_type == rhs_type;
     }
 
-    [[nodiscard]] constexpr static bool is_unary_operator(const Token& token) noexcept
-    {
-        constexpr std::array<Type, 5> unary_operators = {
-            Type::BANG,
-            Type::MINUS_MINUS,
-            Type::STAR,
-            Type::PLUS_PLUS,
-            Type::AMPERSAND,
-        };
-
-        return std::ranges::find(unary_operators, token.type()) !=
-               unary_operators.end();
-    }
-
-    [[nodiscard]] constexpr static bool is_binary_operator(const Token& token) noexcept
-    {
-        constexpr std::array<Type, 12> binary_operators = {
-            Type::BANG_EQUAL,
-            Type::EQUAL_EQUAL,
-            Type::GREATER,
-            Type::GREATER_EQUAL,
-            Type::LESS,
-            Type::LESS_EQUAL,
-            Type::MINUS,
-            Type::PLUS,
-            Type::STAR,
-            Type::COLON_COLON,
-            Type::DOT,
-            Type::ARROW,
-        };
-
-        return std::ranges::find(binary_operators, token.type()) !=
-               binary_operators.end();
-    }
-
     [[nodiscard]] constexpr static std::optional<Type> is_keyword(const std::string& lexeme) noexcept
     {
         if (lexeme == "fn") { return Type::FN; }
@@ -148,6 +113,30 @@ class [[nodiscard]] Token
         return {};
     }
 
+    [[nodiscard]] constexpr static bool is_equality_operator(const Token& token) noexcept
+    {
+        constexpr std::array<Type, 2> comparison_operators = {
+            Type::EQUAL_EQUAL,
+            Type::BANG_EQUAL,
+        };
+
+        return std::ranges::find(comparison_operators, token.type()) !=
+               comparison_operators.end();
+    }
+
+    [[nodiscard]] constexpr static bool is_comparison_operator(const Token& token) noexcept
+    {
+        constexpr std::array<Type, 4> comparison_operators = {
+            Type::GREATER,
+            Type::GREATER_EQUAL,
+            Type::LESS,
+            Type::LESS_EQUAL,
+        };
+
+        return std::ranges::find(comparison_operators, token.type()) !=
+               comparison_operators.end();
+    }
+
     [[nodiscard]] constexpr static bool is_assignment_operator(const Token& token) noexcept
     {
         constexpr std::array<Type, 2> assignment_operators = {
@@ -157,6 +146,30 @@ class [[nodiscard]] Token
 
         return std::ranges::find(assignment_operators, token.type()) !=
                assignment_operators.end();
+    }
+
+    [[nodiscard]] constexpr static bool is_literal(const Token& token) noexcept
+    {
+        constexpr std::array<Type, 3> literals = {
+            Type::NUMBER,
+            Type::SINGLE_QUOTED_STRING,
+            Type::DOUBLE_QUOTED_STRING,
+        };
+
+        return std::ranges::find(literals, token.type()) != literals.end();
+    }
+
+    [[nodiscard]] constexpr static bool is_unary_operator(const Token& token) noexcept
+    {
+        constexpr std::array<Type, 4> unary_operators = {
+            Type::MINUS,
+            Type::BANG,
+            Type::PLUS_PLUS,
+            Type::AMPERSAND,
+        };
+
+        return std::ranges::find(unary_operators, token.type()) !=
+               unary_operators.end();
     }
 
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
