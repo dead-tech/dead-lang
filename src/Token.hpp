@@ -177,6 +177,11 @@ class [[nodiscard]] Token
                unary_operators.end();
     }
 
+    [[nodiscard]] constexpr static bool is_logical_operator(const Token& token) noexcept
+    {
+        return token.type() == Type::AND || token.type() == Type::OR;
+    }
+
     [[nodiscard]] constexpr static bool is_boolean(const Token& token) noexcept
     {
         return token.type() == Type::TRUE || token.type() == Type::FALSE;

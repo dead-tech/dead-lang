@@ -490,7 +490,7 @@ std::shared_ptr<Expression> Parser::parse_expression()
 
 std::shared_ptr<Expression> Parser::parse_assignment_expression()
 {
-    auto expression = parse_or_expression();
+    auto expression = parse_logical_expression();
 
     if (const auto assignment_operator = peek();
         Token::is_assignment_operator(*assignment_operator)) {
@@ -517,39 +517,27 @@ std::shared_ptr<Expression> Parser::parse_assignment_expression()
     return expression;
 }
 
-std::shared_ptr<Expression> Parser::parse_or_expression()
+std::shared_ptr<Expression> Parser::parse_logical_expression()
 {
-    auto expression = parse_and_expression();
+    auto expression = parse_equality_expression();
 
-    while (matches_and_consume(Token::Type::OR)) {
-        auto right = parse_and_expression();
+    auto logical_operator = peek();
+    while (Token::is_logical_operator(*logical_operator)) {
+        advance(1); // Skip the logical operator
+
+        auto right = parse_equality_expression();
         if (!right) {
             m_supervisor->push_error(
-                "expected expression after 'or' while parsing", previous_position());
+                fmt::format(
+                    "expected expression after '{}' while parsing",
+                    logical_operator->lexeme()),
+                logical_operator->position());
             return nullptr;
         }
 
         expression = std::make_shared<LogicalExpression>(LogicalExpression(
             std::move(expression), Token::Type::OR, std::move(right)));
-    }
-
-    return expression;
-}
-
-std::shared_ptr<Expression> Parser::parse_and_expression()
-{
-    auto expression = parse_equality_expression();
-
-    while (matches_and_consume(Token::Type::AND)) {
-        auto right = parse_equality_expression();
-        if (!right) {
-            m_supervisor->push_error(
-                "expected expression after 'and' while parsing", previous_position());
-            return nullptr;
-        }
-
-        expression = std::make_shared<LogicalExpression>(LogicalExpression(
-            std::move(expression), Token::Type::AND, std::move(right)));
+        logical_operator = peek();
     }
 
     return expression;

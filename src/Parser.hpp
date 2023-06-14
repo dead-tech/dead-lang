@@ -47,7 +47,7 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     // Expressions
     [[nodiscard]] std::shared_ptr<Expression> parse_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_assignment_expression();
-    [[nodiscard]] std::shared_ptr<Expression> parse_or_expression();
+    [[nodiscard]] std::shared_ptr<Expression> parse_logical_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_and_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_equality_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_comparison_expression();
