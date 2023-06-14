@@ -31,6 +31,11 @@ class [[nodiscard]] UnaryExpression final : public Expression
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
+    [[nodiscard]] Token::Type operator_type() const noexcept
+    {
+        return m_operator;
+    };
+
   private:
     Token::Type                 m_operator;
     std::shared_ptr<Expression> m_right;
@@ -61,6 +66,11 @@ class [[nodiscard]] BinaryExpression final : public Expression
         std::shared_ptr<Expression> right) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
+
+    [[nodiscard]] Token::Type operator_type() const noexcept
+    {
+        return m_operator;
+    };
 
   private:
     std::shared_ptr<Expression> m_left;

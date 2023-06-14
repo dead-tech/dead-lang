@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "Expression.hpp"
 #include "Token.hpp"
 
 class [[nodiscard]] Typechecker
@@ -154,5 +155,22 @@ class [[nodiscard]] Typechecker
         return Typechecker::builtin_type_from_string(token.lexeme()) !=
                    Typechecker::BuiltinType::NONE ||
                std::ranges::find(custom_types, token.lexeme()) != custom_types.end();
+    }
+
+    [[nodiscard]] static bool is_valid_lvalue(const std::shared_ptr<Expression>& expression) noexcept
+    {
+        if (const auto unary_expression =
+                std::dynamic_pointer_cast<UnaryExpression>(expression)) {
+            return unary_expression->operator_type() == Token::Type::STAR;
+        }
+
+        if (const auto binary_expression =
+                std::dynamic_pointer_cast<BinaryExpression>(expression)) {
+            return binary_expression->operator_type() == Token::Type::DOT ||
+                   binary_expression->operator_type() == Token::Type::ARROW;
+        }
+
+        return std::dynamic_pointer_cast<VariableExpression>(expression) ||
+               std::dynamic_pointer_cast<IndexOperatorExpression>(expression);
     }
 };

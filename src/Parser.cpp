@@ -504,11 +504,7 @@ std::shared_ptr<Expression> Parser::parse_assignment_expression()
             return nullptr;
         }
 
-        const bool is_valid_lhs =
-            std::dynamic_pointer_cast<VariableExpression>(expression) ||
-            std::dynamic_pointer_cast<IndexOperatorExpression>(expression);
-
-        if (is_valid_lhs) {
+        if (Typechecker::is_valid_lvalue(expression)) {
             return std::make_shared<AssignmentExpression>(AssignmentExpression(
                 expression, assignment_operator->type(), std::move(value)));
         }
