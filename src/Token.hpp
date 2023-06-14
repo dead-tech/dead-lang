@@ -271,6 +271,9 @@ class [[nodiscard]] Token
             case Type::AMPERSAND: {
                 return "&";
             }
+            case Type::SLASH: {
+                return "/";
+            }
             default: {
                 return "not implemented";
             }

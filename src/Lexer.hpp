@@ -46,8 +46,12 @@ class [[nodiscard]] Lexer : public Iterator<std::string>
 
     [[nodiscard]] Token lex_colon() noexcept;
 
+    [[nodiscard]] Token lex_slash() noexcept;
+
     template <std::invocable<char> Callable>
     void consume_chars(Callable&& callable) noexcept;
+
+    [[nodiscard]] bool eol() const noexcept { return peek() == '\n'; }
 
     std::shared_ptr<Supervisor> m_supervisor;
 };

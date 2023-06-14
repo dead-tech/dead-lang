@@ -48,9 +48,6 @@ Token Lexer::next_token()
             return Token::create(
                 Token::Type::RIGHT_PAREN, ")", Position::create(cursor(), cursor()));
         }
-        case '-': {
-            return lex_minus();
-        }
         case '{': {
             advance(1);
             return Token::create(
@@ -60,9 +57,6 @@ Token Lexer::next_token()
             advance(1);
             return Token::create(
                 Token::Type::RIGHT_BRACE, "}", Position::create(cursor(), cursor()));
-        }
-        case '=': {
-            return lex_equal_sign();
         }
         case ';': {
             advance(1);
@@ -95,6 +89,15 @@ Token Lexer::next_token()
         case '.': {
             advance(1);
             return Token::create(Token::Type::DOT, ".", Position::create(cursor(), cursor()));
+        }
+        case '/': {
+            return lex_slash();
+        }
+        case '-': {
+            return lex_minus();
+        }
+        case '=': {
+            return lex_equal_sign();
         }
         case '+': {
             return lex_plus();
@@ -316,6 +319,19 @@ Token Lexer::lex_colon() noexcept
 
     advance(1);
     return Token::create(Token::Type::COLON, ":", Position::create(start, cursor()));
+}
+
+Token Lexer::lex_slash() noexcept
+{
+    const auto start = cursor();
+
+    if (auto ch = peek_ahead(1); ch == '/') {
+        while (!eol()) { advance(1); }
+        return Token::create_dumb();
+    }
+
+    advance(1);
+    return Token::create(Token::Type::SLASH, "/", Position::create(start, cursor()));
 }
 
 template <std::invocable<char> Callable>
