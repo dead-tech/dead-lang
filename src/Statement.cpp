@@ -170,17 +170,6 @@ std::string VariableStatement::evaluate() const noexcept
         m_expression->evaluate());
 }
 
-PlusEqualStatement::PlusEqualStatement(std::string name, std::shared_ptr<Expression> expression) noexcept
-    : m_name{std::move(name)},
-      m_expression{std::move(expression)}
-{
-}
-
-std::string PlusEqualStatement::evaluate() const noexcept
-{
-    return m_name + " += " + m_expression->evaluate() + ";";
-}
-
 WhileStatement::WhileStatement(std::shared_ptr<Expression> condition, BlockStatement body) noexcept
     : m_condition{std::move(condition)},
       m_body{std::move(body)}
@@ -254,22 +243,6 @@ std::string ArrayStatement::evaluate() const noexcept
 
     c_array_code += "};";
     return c_array_code;
-}
-
-IndexOperatorStatement::IndexOperatorStatement(
-    std::string                 variable_name,
-    std::shared_ptr<Expression> index,
-    std::shared_ptr<Expression> expression) noexcept
-    : m_variable_name{std::move(variable_name)},
-      m_index{std::move(index)},
-      m_expression{std::move(expression)}
-{
-}
-
-std::string IndexOperatorStatement::evaluate() const noexcept
-{
-    return fmt::format(
-        "{}[{}] = {};", m_variable_name, m_index->evaluate(), m_expression->evaluate());
 }
 
 StructStatement::StructStatement(std::string name, std::vector<Typechecker::VariableDeclaration> member_variables) noexcept

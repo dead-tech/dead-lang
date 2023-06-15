@@ -129,18 +129,6 @@ class [[nodiscard]] VariableStatement final : public Statement
     std::shared_ptr<Expression>      m_expression;
 };
 
-class [[nodiscard]] PlusEqualStatement final : public Statement
-{
-  public:
-    PlusEqualStatement(std::string name, std::shared_ptr<Expression> expression) noexcept;
-
-    [[nodiscard]] std::string evaluate() const noexcept override;
-
-  private:
-    std::string                 m_name;
-    std::shared_ptr<Expression> m_expression;
-};
-
 class [[nodiscard]] WhileStatement final : public Statement
 {
   public:
@@ -194,22 +182,6 @@ class [[nodiscard]] ArrayStatement final : public Statement
   private:
     Typechecker::VariableDeclaration         m_variable_declaration;
     std::vector<std::shared_ptr<Expression>> m_elements;
-};
-
-class [[nodiscard]] IndexOperatorStatement final : public Statement
-{
-  public:
-    IndexOperatorStatement(
-        std::string                 variable_name,
-        std::shared_ptr<Expression> index,
-        std::shared_ptr<Expression> expression) noexcept;
-
-    [[nodiscard]] std::string evaluate() const noexcept override;
-
-  private:
-    std::string                 m_variable_name;
-    std::shared_ptr<Expression> m_index;
-    std::shared_ptr<Expression> m_expression;
 };
 
 class [[nodiscard]] StructStatement final : public Statement

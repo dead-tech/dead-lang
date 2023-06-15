@@ -33,9 +33,7 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] std::shared_ptr<Statement> parse_if_statement();
     [[nodiscard]] std::shared_ptr<Statement> parse_return_statement();
     [[nodiscard]] std::shared_ptr<Statement>
-    parse_variable_statement(const Token::Type& ending_delimiter = Token::Type::END_OF_LINE);
-    [[nodiscard]] std::shared_ptr<Statement>
-    parse_plus_equal_statement(const std::string&& variable_name);
+                                             parse_variable_statement(const Token::Type& ending_delimiter = Token::Type::END_OF_LINE);
     [[nodiscard]] std::shared_ptr<Statement> parse_while_statement();
     [[nodiscard]] std::shared_ptr<Statement> parse_for_statement();
     [[nodiscard]] std::shared_ptr<Statement> parse_expression_statement();
@@ -48,7 +46,6 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] std::shared_ptr<Expression> parse_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_assignment_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_logical_expression();
-    [[nodiscard]] std::shared_ptr<Expression> parse_and_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_equality_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_comparison_expression();
     [[nodiscard]] std::shared_ptr<Expression> parse_arithmetic_operator_expression();
@@ -73,7 +70,6 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] bool eol() const noexcept;
     void               skip_newlines() noexcept;
     [[nodiscard]] bool identifier_is_function_call() const noexcept;
-    [[nodiscard]] bool identifier_is_index_operator() const noexcept;
     [[nodiscard]] bool is_defined_struct(const Token& token) const noexcept;
 
     std::shared_ptr<Supervisor> m_supervisor;
