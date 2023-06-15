@@ -8,3 +8,4 @@ set(SOURCES src/main.cpp src/Lexer.cpp src/Parser.cpp src/Statement.cpp src/Type
 include_directories(include/)
 
 add_executable(dead_lang ${SOURCES})
+set_target_properties(dead_lang PROPERTIES OUTPUT_NAME "dl")
