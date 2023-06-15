@@ -25,6 +25,10 @@ int main(int argc, char** argv)
         .help("compiles and runs the specified file")
         .default_value(false)
         .implicit_value(true);
+    parser.add_argument("-L", "--output-to-stdout")
+        .help("prints transpiled file to stdout")
+        .default_value(false)
+        .implicit_value(true);
     parser.add_argument("-I", "--intermediates")
         .help("generate intermediate files")
         .default_value(false)
@@ -74,6 +78,12 @@ int main(int argc, char** argv)
     }
 
     const auto transpiled_file_content = ast->evaluate();
+
+    const auto output_to_stdout = parser.get<bool>("--output-to-stdout");
+    if (output_to_stdout) {
+        fmt::print("{}", transpiled_file_content);
+        return 0;
+    }
 
     const std::string intermediate_file = "intermediate.c";
     std::ofstream     intermediate_file_fd(intermediate_file);
