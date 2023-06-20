@@ -4,6 +4,7 @@
 #include <concepts>
 #include <memory>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 #define FMT_HEADER_ONLY
@@ -17,6 +18,18 @@
 #include "Supervisor.hpp"
 #include "Token.hpp"
 #include "Typechecker.hpp"
+
+namespace std
+{
+template <>
+struct hash<Typechecker::CustomType>
+{
+    std::size_t operator()(const Typechecker::CustomType& custom_type) const noexcept
+    {
+        return std::hash<std::string>{}(custom_type.name);
+    }
+};
+} // namespace std
 
 class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
 {
@@ -64,7 +77,7 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] std::string parse_identifier() noexcept;
     [[nodiscard]] std::vector<Typechecker::VariableDeclaration> parse_member_variables() noexcept;
     [[nodiscard]] Typechecker::VariableDeclaration parse_variable_declaration() noexcept;
-    [[nodiscard]] std::vector<Typechecker::EnumVariant> parse_enum_variants() noexcept;
+    [[nodiscard]] EnumStatement::EnumVariant parse_enum_variants() noexcept;
 
     // Parsing utilities
     [[nodiscard]] Position previous_position() const noexcept;
@@ -75,9 +88,9 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     void               skip_newlines() noexcept;
     [[nodiscard]] bool identifier_is_function_call() const noexcept;
     [[nodiscard]] std::optional<Typechecker::CustomType>
-    defined_custom_type(const Token& token) const noexcept;
+    defined_custom_type(const std::string token) const noexcept;
 
-    std::shared_ptr<Supervisor>          m_supervisor;
-    std::vector<Typechecker::CustomType> m_custom_types        = {};
-    std::shared_ptr<Environment>         m_current_environment = nullptr;
+    std::shared_ptr<Supervisor> m_supervisor;
+    std::unordered_map<Typechecker::CustomType, std::shared_ptr<Statement>> m_custom_types = {};
+    std::shared_ptr<Environment> m_current_environment = nullptr;
 };

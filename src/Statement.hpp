@@ -5,6 +5,7 @@
 #include <numeric>
 #include <ranges>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -203,13 +204,22 @@ class [[nodiscard]] StructStatement final : public Statement
 class [[nodiscard]] EnumStatement final : public Statement
 {
   public:
-    EnumStatement(std::string name, std::vector<Typechecker::EnumVariant> variants) noexcept;
+    using EnumVariant = std::unordered_map<std::string, std::vector<Typechecker::Type>>;
+
+    EnumStatement(std::string name, EnumVariant variants) noexcept;
+
+    [[nodiscard]] const std::string& name() const noexcept { return m_name; }
+
+    [[nodiscard]] const EnumVariant& variants() const noexcept
+    {
+        return m_variants;
+    }
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
-    std::string                           m_name;
-    std::vector<Typechecker::EnumVariant> m_variants;
+    std::string m_name;
+    EnumVariant m_variants;
 };
 
 class [[nodiscard]] MatchStatement final : public Statement
@@ -217,19 +227,20 @@ class [[nodiscard]] MatchStatement final : public Statement
   public:
     struct [[nodiscard]] MatchCase
     {
-        std::shared_ptr<Expression> label;
-        BlockStatement              body;
+        std::string              label;
+        std::vector<std::string> destructuring;
+        BlockStatement           body;
     };
 
     MatchStatement(
-        Typechecker::Type                  type,
+        std::shared_ptr<Statement>         enum_statement,
         const std::shared_ptr<Expression>& expression,
         std::vector<MatchCase>             cases) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
-    Typechecker::Type           m_type;
+    std::shared_ptr<Statement>  m_enum;
     std::shared_ptr<Expression> m_expression;
     std::vector<MatchCase>      m_cases;
 };

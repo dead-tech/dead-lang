@@ -228,7 +228,7 @@ std::shared_ptr<Statement> Parser::parse_return_statement()
 
 std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter)
 {
-    if (!Typechecker::is_valid_type(*peek(), m_custom_types) &&
+    if (!Typechecker::is_valid_type(peek()->lexeme(), m_custom_types) &&
         !peek()->matches(Token::Type::MUT)) {
         return std::make_shared<ExpressionStatement>(parse_assignment_expression());
     }
@@ -490,8 +490,10 @@ std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept
         return nullptr;
     }
 
-    m_custom_types.push_back(Typechecker::CustomType(struct_name, Token::Type::STRUCT));
-    return std::make_shared<StructStatement>(StructStatement(struct_name, member_variables));
+    const auto struct_statement =
+        std::make_shared<StructStatement>(StructStatement(struct_name, member_variables));
+    m_custom_types.emplace(Typechecker::CustomType(struct_name, Token::Type::STRUCT), struct_statement);
+    return struct_statement;
 }
 
 std::shared_ptr<Statement> Parser::parse_enum_statement() noexcept
@@ -532,9 +534,10 @@ std::shared_ptr<Statement> Parser::parse_enum_statement() noexcept
         return nullptr;
     }
 
-    m_custom_types.push_back(Typechecker::CustomType(enum_name, Token::Type::ENUM));
-
-    return std::make_shared<EnumStatement>(EnumStatement(enum_name, enum_variants));
+    const auto enum_statement =
+        std::make_shared<EnumStatement>(EnumStatement(enum_name, enum_variants));
+    m_custom_types.emplace(Typechecker::CustomType(enum_name, Token::Type::ENUM), enum_statement);
+    return enum_statement;
 }
 
 std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
@@ -582,8 +585,23 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
 
     // FIXME: Error handling has to be improved a lot here.
     std::vector<MatchStatement::MatchCase> match_cases;
-    consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &match_cases] {
-        const auto label = parse_expression();
+    std::vector<std::string>               destructuring;
+
+    consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &match_cases, &destructuring] {
+        const auto label = parse_identifier();
+
+        // Destructuring
+        if (matches_and_consume(Token::Type::LEFT_PAREN)) {
+            consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &destructuring] {
+                if (peek()->matches(Token::Type::COMMA)) { advance(1); }
+                destructuring.push_back(parse_identifier());
+            });
+
+            if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
+                m_supervisor->push_error("expected ')' after match label destructuring while parsing", previous_position());
+                return;
+            }
+        }
 
         if (!matches_and_consume(Token::Type::FAT_ARROW)) {
             m_supervisor->push_error(
@@ -607,7 +625,8 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
 
         (void)matches_and_consume(Token::Type::END_OF_LINE);
 
-        match_cases.emplace_back(label, BlockStatement(body));
+        match_cases.emplace_back(label, destructuring, BlockStatement(body));
+        destructuring.clear();
     });
 
     if (match_cases.empty()) {
@@ -624,8 +643,11 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
 
     (void)matches_and_consume(Token::Type::END_OF_LINE);
 
+    const auto custom_type =
+        std::get<Typechecker::CustomType>(variable_declaration->type.variant());
+
     return std::make_shared<MatchStatement>(
-        MatchStatement(variable_declaration->type, match_expression, match_cases));
+        MatchStatement(m_custom_types[custom_type], match_expression, match_cases));
 }
 
 std::shared_ptr<Expression> Parser::parse_expression()
@@ -932,7 +954,8 @@ Typechecker::VariableDeclaration Parser::parse_variable_declaration() noexcept
     if (is_mutable) { advance(1); }
 
     auto variable_type = Typechecker::builtin_type_from_string(peek()->lexeme());
-    std::optional<Typechecker::CustomType> custom_type = defined_custom_type(*peek());
+    std::optional<Typechecker::CustomType> custom_type =
+        defined_custom_type(peek()->lexeme());
 
     if (variable_type == Typechecker::BuiltinType::NONE && !custom_type) {
         m_supervisor->push_error(
@@ -965,9 +988,9 @@ Typechecker::VariableDeclaration Parser::parse_variable_declaration() noexcept
     };
 }
 
-std::vector<Typechecker::EnumVariant> Parser::parse_enum_variants() noexcept
+EnumStatement::EnumVariant Parser::parse_enum_variants() noexcept
 {
-    std::vector<Typechecker::EnumVariant> variants;
+    EnumStatement::EnumVariant variants;
     consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &variants] {
         const auto variant_name = parse_identifier();
         if (variant_name.empty()) {
@@ -1016,10 +1039,7 @@ std::vector<Typechecker::EnumVariant> Parser::parse_enum_variants() noexcept
             return;
         }
 
-        variants.push_back(Typechecker::EnumVariant{
-            .name   = variant_name,
-            .fields = fields,
-        });
+        variants.emplace(variant_name, fields);
     });
 
     return variants;
@@ -1067,12 +1087,13 @@ bool Parser::identifier_is_function_call() const noexcept
     return true;
 }
 
-std::optional<Typechecker::CustomType> Parser::defined_custom_type(const Token& token) const noexcept
+std::optional<Typechecker::CustomType> Parser::defined_custom_type(const std::string token) const noexcept
 {
-    const auto found = std::ranges::find_if(m_custom_types, [&token](const auto custom_type) {
-        return custom_type.name == token.lexeme();
+    const auto found = std::ranges::find_if(m_custom_types, [&token](const auto map_entry) {
+        const auto [custom_type, statement] = map_entry;
+        return custom_type.name == token;
     });
 
-    if (found != m_custom_types.end()) { return *found; }
+    if (found != m_custom_types.end()) { return found->first; }
     return {};
 }
