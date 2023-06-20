@@ -10,6 +10,7 @@
 
 #include <fmt/core.h>
 
+#include "Environment.hpp"
 #include "Expression.hpp"
 #include "Iterator.hpp"
 #include "Statement.hpp"
@@ -76,5 +77,6 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     defined_custom_type(const Token& token) const noexcept;
 
     std::shared_ptr<Supervisor>          m_supervisor;
-    std::vector<Typechecker::CustomType> m_custom_types = {};
+    std::vector<Typechecker::CustomType> m_custom_types        = {};
+    std::shared_ptr<Environment>         m_current_environment = nullptr;
 };

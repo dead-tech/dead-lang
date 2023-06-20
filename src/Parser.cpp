@@ -45,6 +45,9 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept
 
 std::shared_ptr<Statement> Parser::parse_function_statement() noexcept
 {
+    // Setup the new environment
+    m_current_environment = std::make_unique<Environment>();
+
     // Skip the fn token
     const auto fn_token = next();
 
@@ -256,6 +259,8 @@ std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& e
             equal_token->position());
         return nullptr;
     }
+
+    m_current_environment->enscope(variable_declaration);
 
     return std::make_shared<VariableStatement>(
         VariableStatement(variable_declaration, expression));
@@ -788,10 +793,15 @@ std::shared_ptr<Expression> Parser::parse_primary_expression()
 
 std::vector<std::shared_ptr<Statement>> Parser::parse_statement_block() noexcept
 {
+    m_current_environment = std::make_shared<Environment>(m_current_environment);
+
     std::vector<std::shared_ptr<Statement>> block;
     consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &block] {
         block.push_back(parse_statement());
     });
+
+    m_current_environment = m_current_environment->parent();
+
     return block;
 }
 
