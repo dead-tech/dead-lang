@@ -353,6 +353,9 @@ class [[nodiscard]] Token
             case Type::FAT_ARROW: {
                 return "=>";
             }
+            case Type::LESS_EQUAL: {
+                return "<=";
+            }
             default: {
                 return "not implemented";
             }

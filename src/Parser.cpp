@@ -201,13 +201,27 @@ std::shared_ptr<Statement> Parser::parse_if_statement()
     }
 
     // Parse else block
-    if (const auto else_token = peek();
-        !else_token || !else_token->matches(Token::Type::ELSE)) {
+    if (const auto else_token = peek(); !else_token || else_token->lexeme() != "else") {
         return std::make_shared<IfStatement>(
             IfStatement(condition, BlockStatement(then_block), BlockStatement({})));
     }
 
+    advance(1); // Skip the else token
+    if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
+        m_supervisor->push_error(
+            "expected '{' after if statement's 'else branch' while parsing",
+            if_token->position());
+        return nullptr;
+    }
+
     const auto else_block = parse_statement_block();
+    if (!matches_and_consume(Token::Type::RIGHT_BRACE)) {
+        m_supervisor->push_error(
+            "expected '}' after if statement's 'else branch' while parsing",
+            if_token->position());
+        return nullptr;
+    }
+
     return std::make_shared<IfStatement>(IfStatement(
         condition, BlockStatement(then_block), BlockStatement(else_block)));
 }
