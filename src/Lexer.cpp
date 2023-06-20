@@ -194,6 +194,11 @@ Token Lexer::lex_equal_sign() noexcept
             Token::Type::EQUAL_EQUAL, "==", Position::create(start, cursor()));
     }
 
+    if (auto ch = peek_ahead(1); ch == '>') {
+        advance(2);
+        return Token::create(Token::Type::FAT_ARROW, "=>", Position::create(start, cursor()));
+    }
+
     advance(1);
     return Token::create(Token::Type::EQUAL, "=", Position::create(start, cursor()));
 }

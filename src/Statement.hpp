@@ -211,3 +211,25 @@ class [[nodiscard]] EnumStatement final : public Statement
     std::string                           m_name;
     std::vector<Typechecker::EnumVariant> m_variants;
 };
+
+class [[nodiscard]] MatchStatement final : public Statement
+{
+  public:
+    struct [[nodiscard]] MatchCase
+    {
+        std::shared_ptr<Expression> label;
+        BlockStatement              body;
+    };
+
+    MatchStatement(
+        Typechecker::Type                  type,
+        const std::shared_ptr<Expression>& expression,
+        std::vector<MatchCase>             cases) noexcept;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    Typechecker::Type           m_type;
+    std::shared_ptr<Expression> m_expression;
+    std::vector<MatchCase>      m_cases;
+};

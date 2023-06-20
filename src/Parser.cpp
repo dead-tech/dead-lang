@@ -140,6 +140,9 @@ std::shared_ptr<Statement> Parser::parse_statement()
         case Token::Type::FOR: {
             return parse_for_statement();
         }
+        case Token::Type::MATCH: {
+            return parse_match_statement();
+        }
         case Token::Type::END_OF_LINE: {
             advance(1);
             return std::make_shared<EmptyStatement>();
@@ -532,6 +535,97 @@ std::shared_ptr<Statement> Parser::parse_enum_statement() noexcept
     m_custom_types.push_back(Typechecker::CustomType(enum_name, Token::Type::ENUM));
 
     return std::make_shared<EnumStatement>(EnumStatement(enum_name, enum_variants));
+}
+
+std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
+{
+    const auto match_token = next();
+
+    if (!matches_and_consume(Token::Type::LEFT_PAREN)) {
+        m_supervisor->push_error(
+            "expected '(' after match keyword while parsing", match_token->position());
+        return nullptr;
+    }
+
+    const auto match_expression = parse_expression();
+    if (!match_expression) {
+        m_supervisor->push_error(
+            "expected expression after match keyword while parsing",
+            match_token->position());
+        return nullptr;
+    }
+
+    // FIXME: This only works if the expression is of type VariableExpression.
+    //        We need to have a way of checking if the result of the expression is of enum type.
+    // Check if the expression resolves to an actual enum type.
+    const auto variable_declaration =
+        m_current_environment->find(match_expression->evaluate());
+    if (!variable_declaration) {
+        m_supervisor->push_error(
+            "expected enum type after match keyword while parsing", match_token->position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
+        m_supervisor->push_error(
+            "expected ')' after match expression while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
+        m_supervisor->push_error(
+            "expected '{' after match expression while parsing", previous_position());
+        return nullptr;
+    }
+
+    (void)matches_and_consume(Token::Type::END_OF_LINE);
+
+    // FIXME: Error handling has to be improved a lot here.
+    std::vector<MatchStatement::MatchCase> match_cases;
+    consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &match_cases] {
+        const auto label = parse_expression();
+
+        if (!matches_and_consume(Token::Type::FAT_ARROW)) {
+            m_supervisor->push_error(
+                "expected '->' after match label while parsing", previous_position());
+            return;
+        }
+
+        if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
+            m_supervisor->push_error(
+                "expected '{' after match label while parsing", previous_position());
+            return;
+        }
+
+        const auto body = parse_statement_block();
+
+        if (!matches_and_consume(Token::Type::RIGHT_BRACE)) {
+            m_supervisor->push_error(
+                "expected '}' after match body while parsing", previous_position());
+            return;
+        }
+
+        (void)matches_and_consume(Token::Type::END_OF_LINE);
+
+        match_cases.emplace_back(label, BlockStatement(body));
+    });
+
+    if (match_cases.empty()) {
+        m_supervisor->push_error(
+            "expected at least one match case while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::RIGHT_BRACE)) {
+        m_supervisor->push_error(
+            "expected '}' after match cases while parsing", previous_position());
+        return nullptr;
+    }
+
+    (void)matches_and_consume(Token::Type::END_OF_LINE);
+
+    return std::make_shared<MatchStatement>(
+        MatchStatement(variable_declaration->type, match_expression, match_cases));
 }
 
 std::shared_ptr<Expression> Parser::parse_expression()

@@ -413,3 +413,39 @@ std::string EnumStatement::evaluate() const noexcept
 
     return c_enum_code;
 }
+
+MatchStatement::MatchStatement(
+    Typechecker::Type                  type,
+    const std::shared_ptr<Expression>& expression,
+    std::vector<MatchCase>             cases) noexcept
+    : m_type{std::move(type)},
+      m_expression{expression},
+      m_cases{std::move(cases)}
+{
+}
+
+std::string MatchStatement::evaluate() const noexcept
+{
+    std::string c_match_code;
+
+    c_match_code += fmt::format("switch({}.variant) {{\n", m_expression->evaluate());
+
+    for (const auto& [label, body] : m_cases) {
+        const auto enum_type = std::get<Typechecker::CustomType>(m_type.variant());
+
+        const auto evaluated_label = label->evaluate();
+
+        if (evaluated_label != "_") {
+            c_match_code += fmt::format("case {}_{}_Var: {{\n", enum_type.name, evaluated_label);
+        } else {
+            c_match_code += fmt::format("default: {{\n");
+        }
+
+        c_match_code += fmt::format("{}\n", body.evaluate());
+        c_match_code += "break;\n}\n";
+    }
+
+    c_match_code += "}\n";
+
+    return c_match_code;
+}

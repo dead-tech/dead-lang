@@ -43,6 +43,7 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] std::string                parse_c_include_statement();
     [[nodiscard]] std::shared_ptr<Statement> parse_struct_statement() noexcept;
     [[nodiscard]] std::shared_ptr<Statement> parse_enum_statement() noexcept;
+    [[nodiscard]] std::shared_ptr<Statement> parse_match_statement() noexcept;
 
     // Expressions
     [[nodiscard]] std::shared_ptr<Expression> parse_expression();

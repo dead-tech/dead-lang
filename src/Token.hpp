@@ -35,6 +35,7 @@ class [[nodiscard]] Token
 
         // Multi-character tokens
         COLON_COLON,
+        FAT_ARROW,
 
         // Comparison
         BANG,
@@ -71,6 +72,7 @@ class [[nodiscard]] Token
         C_INCLUDE,
         STRUCT,
         ENUM,
+        MATCH,
 
         // Literals
         IDENTIFIER,
@@ -118,6 +120,7 @@ class [[nodiscard]] Token
         if (lexeme == "and") { return Type::AND; }
         if (lexeme == "or") { return Type::OR; }
         if (lexeme == "enum") { return Type::ENUM; }
+        if (lexeme == "match") { return Type::MATCH; }
         return {};
     }
 
@@ -212,7 +215,7 @@ class [[nodiscard]] Token
 
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
     {
-        static_assert(static_cast<std::uint8_t>(Type::MAX) == 49, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
+        static_assert(static_cast<std::uint8_t>(Type::MAX) == 51, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
 
         switch (type) {
             case Type::FN: {
@@ -343,6 +346,12 @@ class [[nodiscard]] Token
             }
             case Type::ENUM: {
                 return "enum";
+            }
+            case Type::MATCH: {
+                return "match";
+            }
+            case Type::FAT_ARROW: {
+                return "=>";
             }
             default: {
                 return "not implemented";
