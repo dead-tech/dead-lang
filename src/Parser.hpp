@@ -41,6 +41,7 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
                                              parse_array_statement(const Typechecker::VariableDeclaration& variable_declaration);
     [[nodiscard]] std::string                parse_c_include_statement();
     [[nodiscard]] std::shared_ptr<Statement> parse_struct_statement() noexcept;
+    [[nodiscard]] std::shared_ptr<Statement> parse_enum_statement() noexcept;
 
     // Expressions
     [[nodiscard]] std::shared_ptr<Expression> parse_expression();
@@ -61,6 +62,7 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] std::string parse_identifier() noexcept;
     [[nodiscard]] std::vector<Typechecker::VariableDeclaration> parse_member_variables() noexcept;
     [[nodiscard]] Typechecker::VariableDeclaration parse_variable_declaration() noexcept;
+    [[nodiscard]] std::vector<Typechecker::EnumVariant> parse_enum_variants() noexcept;
 
     // Parsing utilities
     [[nodiscard]] Position previous_position() const noexcept;
@@ -70,8 +72,9 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] bool eol() const noexcept;
     void               skip_newlines() noexcept;
     [[nodiscard]] bool identifier_is_function_call() const noexcept;
-    [[nodiscard]] bool is_defined_struct(const Token& token) const noexcept;
+    [[nodiscard]] std::optional<Typechecker::CustomType>
+    defined_custom_type(const Token& token) const noexcept;
 
-    std::shared_ptr<Supervisor> m_supervisor;
-    std::vector<std::string>    m_defined_structs = {};
+    std::shared_ptr<Supervisor>          m_supervisor;
+    std::vector<Typechecker::CustomType> m_custom_types = {};
 };

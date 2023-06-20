@@ -64,6 +64,7 @@ class [[nodiscard]] ModuleStatement final : public Statement
         std::string              name,
         std::vector<std::string> c_includes,
         BlockStatement           structs,
+        BlockStatement           enums,
         BlockStatement           functions) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
@@ -72,6 +73,7 @@ class [[nodiscard]] ModuleStatement final : public Statement
     std::string              m_name;
     std::vector<std::string> m_c_includes;
     BlockStatement           m_structs;
+    BlockStatement           m_enums;
     BlockStatement           m_functions;
 };
 
@@ -196,4 +198,16 @@ class [[nodiscard]] StructStatement final : public Statement
   private:
     std::string                                   m_name;
     std::vector<Typechecker::VariableDeclaration> m_member_variables;
+};
+
+class [[nodiscard]] EnumStatement final : public Statement
+{
+  public:
+    EnumStatement(std::string name, std::vector<Typechecker::EnumVariant> variants) noexcept;
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    std::string                           m_name;
+    std::vector<Typechecker::EnumVariant> m_variants;
 };

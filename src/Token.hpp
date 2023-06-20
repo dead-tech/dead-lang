@@ -70,6 +70,7 @@ class [[nodiscard]] Token
         MUT,
         C_INCLUDE,
         STRUCT,
+        ENUM,
 
         // Literals
         IDENTIFIER,
@@ -116,6 +117,7 @@ class [[nodiscard]] Token
         if (lexeme == "class") { return Type::CLASS; }
         if (lexeme == "and") { return Type::AND; }
         if (lexeme == "or") { return Type::OR; }
+        if (lexeme == "enum") { return Type::ENUM; }
         return {};
     }
 
@@ -210,7 +212,7 @@ class [[nodiscard]] Token
 
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
     {
-        static_assert(static_cast<std::uint8_t>(Type::MAX) == 48, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
+        static_assert(static_cast<std::uint8_t>(Type::MAX) == 49, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
 
         switch (type) {
             case Type::FN: {
@@ -338,6 +340,9 @@ class [[nodiscard]] Token
             }
             case Type::OR: {
                 return "or";
+            }
+            case Type::ENUM: {
+                return "enum";
             }
             default: {
                 return "not implemented";

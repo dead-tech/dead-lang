@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "Expression.hpp"
@@ -24,17 +25,43 @@ class [[nodiscard]] Typechecker
         F32,
         F64,
         CHAR,
-        STRUCT,
         NONE,
+    };
+
+    struct [[nodiscard]] CustomType
+    {
+        std::string name;
+        Token::Type type;
+    };
+
+    struct [[nodiscard]] Type
+    {
+      public:
+        constexpr explicit Type(CustomType type) : m_type{std::move(type)} {}
+
+        constexpr explicit Type(BuiltinType type) : m_type{type} {}
+
+        [[nodiscard]] constexpr std::variant<BuiltinType, CustomType> variant() const noexcept
+        {
+            return m_type;
+        }
+
+      private:
+        std::variant<BuiltinType, CustomType> m_type;
     };
 
     struct [[nodiscard]] VariableDeclaration
     {
-        BuiltinType                type;
-        std::string                type_extensions;
-        bool                       is_mutable;
-        std::string                name;
-        std::optional<std::string> custom_type;
+        bool        is_mutable;
+        Type        type;
+        std::string type_extensions;
+        std::string name;
+    };
+
+    struct [[nodiscard]] EnumVariant
+    {
+        std::string       name;
+        std::vector<Type> fields;
     };
 
     [[nodiscard]] static constexpr BuiltinType builtin_type_from_string(const std::string& type) noexcept
@@ -148,13 +175,31 @@ class [[nodiscard]] Typechecker
     }
 
     [[nodiscard]] static constexpr bool
-    is_valid_type(const Token& token, const std::vector<std::string>& custom_types) noexcept
+    is_valid_type(const Token& token, const std::vector<CustomType>& custom_types) noexcept
     {
         if (!token.matches(Token::Type::IDENTIFIER)) { return false; }
 
+        const bool is_custom_type =
+            std::ranges::find_if(custom_types, [&](const auto& custom_type) {
+                return custom_type.name == token.lexeme();
+            }) != custom_types.end();
+
         return Typechecker::builtin_type_from_string(token.lexeme()) !=
                    Typechecker::BuiltinType::NONE ||
-               std::ranges::find(custom_types, token.lexeme()) != custom_types.end();
+               is_custom_type;
+    }
+
+    [[nodiscard]] static constexpr bool
+    is_valid_type(const std::string& token, const std::vector<CustomType>& custom_types) noexcept
+    {
+        const bool is_custom_type =
+            std::ranges::find_if(custom_types, [&](const auto& custom_type) {
+                return custom_type.name == token;
+            }) != custom_types.end();
+
+        return Typechecker::builtin_type_from_string(token) !=
+                   Typechecker::BuiltinType::NONE ||
+               is_custom_type;
     }
 
     [[nodiscard]] static bool is_valid_lvalue(const std::shared_ptr<Expression>& expression) noexcept
@@ -172,5 +217,13 @@ class [[nodiscard]] Typechecker
 
         return std::dynamic_pointer_cast<VariableExpression>(expression) ||
                std::dynamic_pointer_cast<IndexOperatorExpression>(expression);
+    }
+
+    [[nodiscard]] static constexpr Type
+    resolve_type(const std::string& type, const Token::Type& token_type) noexcept
+    {
+        return Typechecker::builtin_type_from_string(type) != Typechecker::BuiltinType::NONE
+                 ? Type(Typechecker::builtin_type_from_string(type))
+                 : Type(CustomType(type, token_type));
     }
 };

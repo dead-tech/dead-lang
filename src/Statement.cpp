@@ -5,16 +5,37 @@
 
 namespace
 {
-std::string transpile_variable_declaration(
+
+
+[[nodiscard]] std::string transpile_type(const Typechecker::Type& type)
+{
+    if (std::holds_alternative<Typechecker::BuiltinType>(type.variant())) {
+        return Typechecker::builtin_type_to_c_type(
+            std::get<Typechecker::BuiltinType>(type.variant()));
+    }
+
+    if (std::holds_alternative<Typechecker::CustomType>(type.variant())) {
+        const auto custom_type = std::get<Typechecker::CustomType>(type.variant());
+
+        if (custom_type.type == Token::Type::STRUCT) {
+            return custom_type.name;
+        }
+
+        if (custom_type.type == Token::Type::ENUM) {
+            return fmt::format("__dl_{}", custom_type.name);
+        }
+    }
+
+    return "unreachable";
+}
+
+[[nodiscard]] std::string transpile_variable_declaration(
     const Typechecker::VariableDeclaration& variable_declaration,
     bool                                    ignore_mutability = false)
 {
     const std::string mutability =
         variable_declaration.is_mutable || ignore_mutability ? "" : "const ";
-    const std::string variable_type =
-        variable_declaration.type == Typechecker::BuiltinType::STRUCT
-            ? *variable_declaration.custom_type
-            : Typechecker::builtin_type_to_c_type(variable_declaration.type);
+    const std::string variable_type = transpile_type(variable_declaration.type);
 
     if (Typechecker::is_fixed_size_array(variable_declaration.type_extensions)) {
         return fmt::format(
@@ -62,10 +83,12 @@ ModuleStatement::ModuleStatement(
     std::string              name,
     std::vector<std::string> c_includes,
     BlockStatement           structs,
+    BlockStatement           enums,
     BlockStatement           functions) noexcept
     : m_name{std::move(name)},
       m_c_includes{std::move(c_includes)},
       m_structs{std::move(structs)},
+      m_enums{std::move(enums)},
       m_functions{std::move(functions)}
 {
 }
@@ -81,6 +104,9 @@ std::string ModuleStatement::evaluate() const noexcept
     c_module_code += "\n";
 
     c_module_code += m_structs.evaluate();
+    c_module_code += "\n";
+
+    c_module_code += m_enums.evaluate();
     c_module_code += "\n";
 
     c_module_code += m_functions.evaluate();
@@ -291,4 +317,99 @@ std::string StructStatement::evaluate() const noexcept
     c_struct_code += "}\n";
 
     return c_struct_code;
+}
+
+EnumStatement::EnumStatement(std::string name, std::vector<Typechecker::EnumVariant> variants) noexcept
+    : m_name{std::move(name)},
+      m_variants{std::move(variants)}
+{
+}
+
+std::string EnumStatement::evaluate() const noexcept
+{
+    std::string c_enum_code;
+
+    c_enum_code += "typedef enum " + m_name + " {\n";
+    for (const auto& variant : m_variants) {
+        c_enum_code += fmt::format(
+            "    {}_{}_Var {},\n",
+            m_name,
+            variant.name,
+            (&variant == &m_variants.front()) ? "= 0" : "");
+    }
+    c_enum_code += fmt::format("}} {};\n\n", m_name);
+
+    c_enum_code += fmt::format("typedef struct __dl_{} {{\n", m_name);
+    c_enum_code += fmt::format("    {} variant;\n", m_name);
+    c_enum_code += "    union {\n";
+    for (const auto& variant : m_variants) {
+        const auto struct_fields = std::accumulate(
+            variant.fields.begin(),
+            variant.fields.end(),
+            std::string{},
+            [i = 0](const auto& acc, const auto& field) mutable {
+                return acc + transpile_type(field) + fmt::format(" data_{}", i++) + "; ";
+            });
+
+        c_enum_code += fmt::format(
+            "        struct {{ {} }} {}_{}_Var_data;\n",
+            struct_fields,
+            m_name,
+            variant.name);
+    }
+
+    c_enum_code += "    };\n";
+    c_enum_code += fmt::format("}} __dl_{};\n\n", m_name);
+
+    for (const auto& variant : m_variants) {
+        const auto params = std::accumulate(
+            variant.fields.begin(),
+            variant.fields.end(),
+            std::string{},
+            [&variant, it = 0](const auto& acc, const auto& field) mutable {
+                if (&field != &variant.fields.back()) {
+                    return acc +
+                           fmt::format(
+                               "{} {}_{}, ", transpile_type(field), variant.name, it++);
+                }
+
+                return acc +
+                       fmt::format("{} {}_{}", transpile_type(field), variant.name, it++);
+            });
+
+        c_enum_code +=
+            fmt::format("__dl_{} {}_{}({}) {{\n", m_name, m_name, variant.name, params);
+
+        const auto arguments = std::accumulate(
+            variant.fields.begin(),
+            variant.fields.end(),
+            std::string{},
+            [&variant, it = 0](const auto& acc, const auto& field) mutable {
+                if (&field != &variant.fields.back()) {
+                    auto retval =
+                        acc + fmt::format(".data_{} = {}_{}, ", it, variant.name, it);
+                    it++;
+                    return retval;
+                }
+
+                auto retval = acc + fmt::format(".data_{} = {}_{}", it, variant.name, it);
+                it++;
+                return retval;
+            });
+
+        c_enum_code += fmt::format(
+            "    const __dl_{} retval = {{ .variant = {}_{}_Var, "
+            ".{}_{}_Var_data = {{ "
+            "{} }}"
+            "}};\n",
+            m_name,
+            m_name,
+            variant.name,
+            m_name,
+            variant.name,
+            arguments);
+        c_enum_code += "\nreturn retval;\n}\n\n";
+    }
+
+    return c_enum_code;
 }

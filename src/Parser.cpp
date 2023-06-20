@@ -19,6 +19,7 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept
 
     std::vector<std::string>                c_includes;
     std::vector<std::shared_ptr<Statement>> structs;
+    std::vector<std::shared_ptr<Statement>> enums;
     std::vector<std::shared_ptr<Statement>> functions;
 
     while (!eof() && !m_supervisor->has_errors()) {
@@ -31,13 +32,15 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept
             c_includes.push_back(parse_c_include_statement());
         } else if (peek()->matches(Token::Type::STRUCT)) {
             structs.push_back(parse_struct_statement());
+        } else if (peek()->matches(Token::Type::ENUM)) {
+            enums.push_back(parse_enum_statement());
         } else {
             functions.push_back(parse_function_statement());
         }
     }
 
     return std::make_shared<ModuleStatement>(
-        name, c_includes, BlockStatement(structs), BlockStatement(functions));
+        name, c_includes, BlockStatement(structs), BlockStatement(enums), BlockStatement(functions));
 }
 
 std::shared_ptr<Statement> Parser::parse_function_statement() noexcept
@@ -219,7 +222,7 @@ std::shared_ptr<Statement> Parser::parse_return_statement()
 
 std::shared_ptr<Statement> Parser::parse_variable_statement(const Token::Type& ending_delimiter)
 {
-    if (!Typechecker::is_valid_type(*peek(), m_defined_structs) &&
+    if (!Typechecker::is_valid_type(*peek(), m_custom_types) &&
         !peek()->matches(Token::Type::MUT)) {
         return std::make_shared<ExpressionStatement>(parse_assignment_expression());
     }
@@ -479,8 +482,51 @@ std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept
         return nullptr;
     }
 
-    m_defined_structs.push_back(struct_name);
+    m_custom_types.push_back(Typechecker::CustomType(struct_name, Token::Type::STRUCT));
     return std::make_shared<StructStatement>(StructStatement(struct_name, member_variables));
+}
+
+std::shared_ptr<Statement> Parser::parse_enum_statement() noexcept
+{
+    const auto enum_token = next();
+
+    const auto enum_name = parse_identifier();
+    if (enum_name.empty()) {
+        m_supervisor->push_error(
+            "expected identifier after enum keyword while parsing", enum_token->position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::LEFT_BRACE)) {
+        m_supervisor->push_error(
+            "expected '{' after enum name while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error(
+            "expected newline after '{' in enum declaration while parsing",
+            previous_position());
+        return nullptr;
+    }
+
+    const auto enum_variants = parse_enum_variants();
+
+    if (!matches_and_consume(Token::Type::RIGHT_BRACE)) {
+        m_supervisor->push_error(
+            "expected '}' after enum variants while parsing", previous_position());
+        return nullptr;
+    }
+
+    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+        m_supervisor->push_error(
+            "expected newline after enum declaration while parsing", previous_position());
+        return nullptr;
+    }
+
+    m_custom_types.push_back(Typechecker::CustomType(enum_name, Token::Type::ENUM));
+
+    return std::make_shared<EnumStatement>(EnumStatement(enum_name, enum_variants));
 }
 
 std::shared_ptr<Expression> Parser::parse_expression()
@@ -768,15 +814,7 @@ std::vector<Typechecker::VariableDeclaration> Parser::parse_member_variables() n
 {
     std::vector<Typechecker::VariableDeclaration> member_variables;
     consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &member_variables] {
-        const auto variable_declaration = parse_variable_declaration();
-        if (variable_declaration.type == Typechecker::BuiltinType::NONE) {
-            m_supervisor->push_error(
-                "unexpected variable type while parsing struct member "
-                "variables",
-                previous_position());
-            return;
-        }
-        member_variables.push_back(variable_declaration);
+        member_variables.push_back(parse_variable_declaration());
     });
 
     return member_variables;
@@ -790,12 +828,12 @@ Typechecker::VariableDeclaration Parser::parse_variable_declaration() noexcept
     if (is_mutable) { advance(1); }
 
     auto variable_type = Typechecker::builtin_type_from_string(peek()->lexeme());
+    std::optional<Typechecker::CustomType> custom_type = defined_custom_type(*peek());
 
-    // Check if it is a struct type
-    std::optional<std::string> custom_type = std::nullopt;
-    if (is_defined_struct(*peek())) {
-        variable_type = Typechecker::BuiltinType::STRUCT;
-        custom_type   = peek()->lexeme();
+    if (variable_type == Typechecker::BuiltinType::NONE && !custom_type) {
+        m_supervisor->push_error(
+            fmt::format("expected variable while parsing", peek()->lexeme()),
+            peek()->position());
     }
 
     // Skip the type
@@ -816,12 +854,71 @@ Typechecker::VariableDeclaration Parser::parse_variable_declaration() noexcept
     skip_newlines();
 
     return Typechecker::VariableDeclaration{
-        .type            = variable_type,
-        .type_extensions = type_extensions,
         .is_mutable      = is_mutable,
+        .type            = custom_type ? Typechecker::Type(*custom_type) : Typechecker::Type(variable_type),
+        .type_extensions = type_extensions,
         .name            = variable_name,
-        .custom_type     = custom_type,
     };
+}
+
+std::vector<Typechecker::EnumVariant> Parser::parse_enum_variants() noexcept
+{
+    std::vector<Typechecker::EnumVariant> variants;
+    consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &variants] {
+        const auto variant_name = parse_identifier();
+        if (variant_name.empty()) {
+            m_supervisor->push_error(
+                "expected enum variant name while parsing", previous_position());
+            return;
+        }
+
+        // This enum variants has fields
+        std::vector<Typechecker::Type> fields;
+        if (peek()->matches(Token::Type::LEFT_PAREN)) {
+            // Skip the left paren
+            advance(1);
+
+            consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &fields] {
+                if (peek()->matches(Token::Type::COMMA)) { advance(1); }
+
+                const auto field_type = parse_identifier();
+                if (field_type.empty()) {
+                    m_supervisor->push_error(
+                        "expected field name while parsing", previous_position());
+                    return;
+                }
+
+                if (!Typechecker::is_valid_type(field_type, m_custom_types)) {
+                    m_supervisor->push_error(
+                        fmt::format("{} is not a valid type while parsing enum variant", field_type),
+                        previous_position());
+                    return;
+                }
+
+                fields.push_back(Typechecker::resolve_type(field_type, Token::Type::ENUM));
+            });
+
+            if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
+                m_supervisor->push_error(
+                    "expected ')' after enum variant fields while parsing",
+                    previous_position());
+                return;
+            }
+        }
+
+        if (!matches_and_consume(Token::Type::END_OF_LINE)) {
+            m_supervisor->push_error(
+                "expected newline after enum variant while parsing", previous_position());
+            return;
+        }
+
+        variants.push_back(Typechecker::EnumVariant{
+            .name   = variant_name,
+            .fields = fields,
+        });
+    });
+
+    return variants;
 }
 
 Position Parser::previous_position() const noexcept
@@ -866,8 +963,12 @@ bool Parser::identifier_is_function_call() const noexcept
     return true;
 }
 
-bool Parser::is_defined_struct(const Token& token) const noexcept
+std::optional<Typechecker::CustomType> Parser::defined_custom_type(const Token& token) const noexcept
 {
-    return std::ranges::find(m_defined_structs, token.lexeme()) !=
-           m_defined_structs.end();
+    const auto found = std::ranges::find_if(m_custom_types, [&token](const auto custom_type) {
+        return custom_type.name == token.lexeme();
+    });
+
+    if (found != m_custom_types.end()) { return *found; }
+    return {};
 }
