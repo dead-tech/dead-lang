@@ -85,14 +85,14 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    const std::string intermediate_file = "intermediate.c";
+    const std::string intermediate_file = "intermediate.cpp";
     std::ofstream     intermediate_file_fd(intermediate_file);
     intermediate_file_fd << transpiled_file_content;
     intermediate_file_fd.close();
 
     const auto output_file_path       = parser.get<std::string>("--output");
     const auto compile_process_result = dts::subprocess_run(
-        fmt::format("gcc -o {} -xc {}", output_file_path, intermediate_file));
+        fmt::format("gcc -o {} -xc++ {}", output_file_path, intermediate_file));
     if (!compile_process_result) {
         fmt::print(
             stderr,

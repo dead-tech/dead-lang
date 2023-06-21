@@ -227,9 +227,9 @@ class [[nodiscard]] MatchStatement final : public Statement
   public:
     struct [[nodiscard]] MatchCase
     {
-        std::shared_ptr<BinaryExpression> label;
-        std::vector<std::string>          destructuring;
-        BlockStatement                    body;
+        std::shared_ptr<EnumExpression> label;
+        std::vector<std::string>        destructuring;
+        BlockStatement                  body;
     };
 
     MatchStatement(const std::shared_ptr<Expression>& expression, std::vector<MatchCase> cases) noexcept;

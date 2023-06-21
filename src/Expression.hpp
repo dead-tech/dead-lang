@@ -180,3 +180,26 @@ class [[nodiscard]] GroupingExpression final : public Expression
   private:
     std::shared_ptr<Expression> m_expression;
 };
+
+
+class [[nodiscard]] EnumExpression final : public Expression
+{
+  public:
+    EnumExpression(std::shared_ptr<Expression> enum_base, std::shared_ptr<Expression> enum_variant) noexcept;
+
+    [[nodiscard]] std::shared_ptr<Expression> enum_base() const noexcept
+    {
+        return m_enum_base;
+    }
+
+    [[nodiscard]] std::shared_ptr<Expression> enum_variant() const noexcept
+    {
+        return m_enum_variant;
+    }
+
+    [[nodiscard]] std::string evaluate() const noexcept override;
+
+  private:
+    std::shared_ptr<Expression> m_enum_base;
+    std::shared_ptr<Expression> m_enum_variant;
+};

@@ -35,7 +35,7 @@ std::string BinaryExpression::evaluate() const noexcept
 {
     switch (m_operator) {
         case Token::Type::COLON_COLON: {
-            return fmt::format("{}_{}", m_left->evaluate(), m_right->evaluate());
+            return fmt::format("{}::{}", m_left->evaluate(), m_right->evaluate());
         }
         case Token::Type::ARROW: {
             return fmt::format("{}->{}", m_left->evaluate(), m_right->evaluate());
@@ -146,4 +146,15 @@ GroupingExpression::GroupingExpression(std::shared_ptr<Expression> expression) n
 std::string GroupingExpression::evaluate() const noexcept
 {
     return fmt::format("({})", m_expression->evaluate());
+}
+
+EnumExpression::EnumExpression(std::shared_ptr<Expression> enum_base, std::shared_ptr<Expression> enum_variant) noexcept
+    : m_enum_base{std::move(enum_base)},
+      m_enum_variant{std::move(enum_variant)}
+{
+}
+
+std::string EnumExpression::evaluate() const noexcept
+{
+    return fmt::format("__dl_{}::{}", m_enum_base->evaluate(), m_enum_variant->evaluate());
 }

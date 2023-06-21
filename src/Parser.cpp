@@ -562,16 +562,15 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
     consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &match_cases, &destructuring] {
         const auto label = parse_expression();
 
-        const auto binary_expression = std::dynamic_pointer_cast<BinaryExpression>(label);
-        if (!binary_expression ||
-            binary_expression->operator_type() != Token::Type::COLON_COLON) {
+        const auto enum_expression = std::dynamic_pointer_cast<EnumExpression>(label);
+        if (!enum_expression) {
             m_supervisor->push_error(
                 "expected enum variant while parsing match cases", previous_position());
             return;
         }
 
-        const auto call_expression =
-            std::dynamic_pointer_cast<FunctionCallExpression>(binary_expression->right());
+        const auto call_expression = std::dynamic_pointer_cast<FunctionCallExpression>(
+            enum_expression->enum_variant());
 
         // Destructuring
         if (call_expression) {
@@ -602,7 +601,7 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
 
         skip_newlines();
 
-        match_cases.emplace_back(binary_expression, destructuring, BlockStatement(body));
+        match_cases.emplace_back(enum_expression, destructuring, BlockStatement(body));
         destructuring.clear();
     });
 
@@ -797,6 +796,18 @@ std::shared_ptr<Expression> Parser::parse_field_accessors_expression()
                     field_accessor->lexeme()),
                 field_accessor->position());
             return nullptr;
+        }
+
+        // Check if it is an enum accessor
+        const auto custom_type_name = expression->evaluate();
+        const auto custom_type_key =
+            Typechecker::CustomType(custom_type_name, Token::Type::ENUM);
+
+        if (m_custom_types.contains(custom_type_key)) {
+            expression = std::make_shared<EnumExpression>(
+                EnumExpression(std::move(expression), std::move(right)));
+            field_accessor = peek();
+            continue;
         }
 
         expression     = std::make_shared<BinaryExpression>(BinaryExpression(

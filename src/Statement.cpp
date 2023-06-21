@@ -281,7 +281,7 @@ std::string StructStatement::evaluate() const noexcept
 {
     std::string c_struct_code;
 
-    c_struct_code += "typedef struct " + m_name + " {\n";
+    c_struct_code += "struct " + m_name + " {\n";
     for (const auto& member_variable : m_member_variables) {
         c_struct_code += fmt::format(
             "    {};\n", transpile_variable_declaration(member_variable, true));
@@ -329,14 +329,14 @@ std::string EnumStatement::evaluate() const noexcept
 {
     std::string c_enum_code;
 
-    c_enum_code += "typedef enum " + m_name + " {\n";
+    c_enum_code += "enum class " + m_name + " : unsigned long long int {\n";
     for (const auto& [name, fields] : m_variants) {
-        c_enum_code += fmt::format("    {}_{}_Var,\n", m_name, name);
+        c_enum_code += fmt::format("    {},\n", name);
     }
-    c_enum_code += fmt::format("}} {};\n\n", m_name);
+    c_enum_code += "};\n\n";
 
-    c_enum_code += fmt::format("typedef struct __dl_{} {{\n", m_name);
-    c_enum_code += fmt::format("    {} variant;\n", m_name);
+    c_enum_code += fmt::format("struct __dl_{} {{\n", m_name);
+    c_enum_code += fmt::format("    {} type;\n", m_name);
     c_enum_code += "    union {\n";
     for (const auto& [name, fields] : m_variants) {
         const auto struct_fields = std::accumulate(
@@ -344,12 +344,11 @@ std::string EnumStatement::evaluate() const noexcept
                 return acc + transpile_type(field) + fmt::format(" data_{}", i++) + "; ";
             });
 
-        c_enum_code += fmt::format(
-            "        struct {{ {} }} {}_{}_Var_data;\n", struct_fields, m_name, name);
+        c_enum_code +=
+            fmt::format("        struct {{ {} }} {}_data;\n", struct_fields, name);
     }
 
     c_enum_code += "    };\n";
-    c_enum_code += fmt::format("}} __dl_{};\n\n", m_name);
 
     for (const auto& [name, fields] : m_variants) {
         const auto params = std::accumulate(
@@ -364,7 +363,7 @@ std::string EnumStatement::evaluate() const noexcept
                 return acc + fmt::format("{} {}_{}", transpile_type(field), name, it++);
             });
 
-        c_enum_code += fmt::format("__dl_{} {}_{}({}) {{\n", m_name, m_name, name, params);
+        c_enum_code += fmt::format("    static __dl_{} {}({}) {{\n", m_name, name, params);
 
         const auto arguments = std::accumulate(
             fields.begin(),
@@ -382,20 +381,11 @@ std::string EnumStatement::evaluate() const noexcept
                 return retval;
             });
 
-        c_enum_code += fmt::format(
-            "    const __dl_{} retval = {{ .variant = {}_{}_Var, "
-            ".{}_{}_Var_data = {{ "
-            "{} }}"
-            "}};\n",
-            m_name,
-            m_name,
-            name,
-            m_name,
-            name,
-            arguments);
-        c_enum_code += "\nreturn retval;\n}\n\n";
+        c_enum_code +=
+            fmt::format("        return __dl_{} {{ .type = {}::{}, .{}_data = {{ {} }} }};\n    }}\n", m_name, m_name, name, name, arguments);
     }
 
+    c_enum_code += "};\n\n";
     return c_enum_code;
 }
 
@@ -409,34 +399,37 @@ std::string MatchStatement::evaluate() const noexcept
 {
     std::string c_match_code;
 
-    c_match_code += fmt::format("switch({}.variant) {{\n", m_expression->evaluate());
+    c_match_code += fmt::format("switch({}.type) {{\n", m_expression->evaluate());
 
     for (const auto& [label, destructuring, body] : m_cases) {
-        std::string evaluated_label = label->left()->evaluate();
+        std::string enum_variant;
         if (const auto call_expression =
-                std::dynamic_pointer_cast<FunctionCallExpression>(label->right());
+                std::dynamic_pointer_cast<FunctionCallExpression>(label->enum_variant());
             call_expression) {
-            evaluated_label += "_" + call_expression->function_name()->evaluate();
+            enum_variant = call_expression->function_name()->evaluate();
         } else {
-            evaluated_label += "_" + label->right()->evaluate();
+            enum_variant = label->enum_variant()->evaluate();
         }
 
+        const auto evaluated_label =
+            fmt::format("{}::{}", label->enum_base()->evaluate(), enum_variant);
+
         if (evaluated_label != "_") {
-            c_match_code += fmt::format("case {}_Var: {{\n", evaluated_label);
+            c_match_code += fmt::format("case {}: {{\n", evaluated_label);
         } else {
             c_match_code += fmt::format("default: {{\n");
         }
 
         for (std::size_t i = 0; i < destructuring.size(); ++i) {
             c_match_code += fmt::format(
-                "const auto {} = {}.{}_Var_data.data_{};\n",
+                "    const auto {} = {}.{}_data.data_{};\n",
                 destructuring[i],
                 m_expression->evaluate(),
-                evaluated_label,
+                enum_variant,
                 i);
         }
 
-        c_match_code += fmt::format("{}\n", body.evaluate());
+        c_match_code += fmt::format("{}", body.evaluate());
         c_match_code += "break;\n}\n";
     }
 
