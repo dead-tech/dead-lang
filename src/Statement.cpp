@@ -302,8 +302,6 @@ EnumStatement::EnumStatement(std::string name, EnumStatement::EnumVariant varian
 
 std::string EnumStatement::evaluate() const noexcept
 {
-    std::string c_enum_code;
-
     const auto* const underlying_type = "unsigned long long int";
 
     const auto enum_variants = std::accumulate(
@@ -316,11 +314,6 @@ std::string EnumStatement::evaluate() const noexcept
 
     const auto enum_code =
         fmt::format("enum class {} : {} {{\n{}\n}};", m_name, underlying_type, enum_variants);
-
-
-    c_enum_code += fmt::format("struct __dl_{} {{\n", m_name);
-    c_enum_code += fmt::format("    {} type;\n", m_name);
-    c_enum_code += "    union {\n";
 
     std::stringstream associated_union_fields{};
     for (const auto& [name, fields] : m_enum_variants) {
