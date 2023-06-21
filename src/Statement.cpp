@@ -85,8 +85,7 @@ std::string BlockStatement::evaluate() const noexcept
     return std::accumulate(
         m_block.begin(), m_block.end(), std::string{}, [](const auto& acc, const auto& statement) {
             // check if statement is EmptyStatement
-            if (const auto empty_statement =
-                    std::dynamic_pointer_cast<EmptyStatement>(statement);
+            if (const auto empty_statement = statement->template as<EmptyStatement>();
                 empty_statement) {
                 return acc + statement->evaluate();
             }
@@ -377,9 +376,10 @@ std::string MatchStatement::evaluate() const noexcept
     std::stringstream match_cases = {};
     for (const auto& [label, destructuring, body] : m_cases) {
         std::string enum_variant;
-        if (const auto call_expression =
-                std::dynamic_pointer_cast<FunctionCallExpression>(label->enum_variant());
-            call_expression) {
+
+        auto const* call_expression =
+            label->enum_variant()->as<FunctionCallExpression>();
+        if (call_expression != nullptr) {
             enum_variant = call_expression->function_name()->evaluate();
         } else {
             enum_variant = label->enum_variant()->evaluate();

@@ -562,18 +562,18 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
     consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &match_cases, &destructuring] {
         const auto label = parse_expression();
 
-        const auto enum_expression = std::dynamic_pointer_cast<EnumExpression>(label);
-        if (!enum_expression) {
+        auto* const enum_expression = label->as<EnumExpression>();
+        if (enum_expression == nullptr) {
             m_supervisor->push_error(
                 "expected enum variant while parsing match cases", previous_position());
             return;
         }
 
-        const auto call_expression = std::dynamic_pointer_cast<FunctionCallExpression>(
-            enum_expression->enum_variant());
+        auto* const call_expression =
+            enum_expression->enum_variant()->as<FunctionCallExpression>();
 
         // Destructuring
-        if (call_expression) {
+        if (call_expression != nullptr) {
             for (const auto& argument : call_expression->arguments()) {
                 destructuring.push_back(argument->evaluate());
             }
@@ -601,7 +601,10 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
 
         skip_newlines();
 
-        match_cases.emplace_back(enum_expression, destructuring, BlockStatement(body));
+        match_cases.emplace_back(
+            std::make_shared<EnumExpression>(*enum_expression),
+            destructuring,
+            BlockStatement(body));
         destructuring.clear();
     });
 

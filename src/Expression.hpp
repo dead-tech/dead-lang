@@ -22,6 +22,12 @@ class [[nodiscard]] Expression
     Expression& operator=(Expression&& expression) = default;
 
     [[nodiscard]] virtual std::string evaluate() const noexcept = 0;
+
+    template <typename To>
+    [[nodiscard]] To* as() noexcept
+    {
+        return dynamic_cast<To*>(this);
+    }
 };
 
 class [[nodiscard]] UnaryExpression final : public Expression

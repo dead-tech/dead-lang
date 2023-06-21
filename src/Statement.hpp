@@ -30,6 +30,12 @@ class [[nodiscard]] Statement
     Statement& operator=(Statement&&) = default;
 
     [[nodiscard]] virtual std::string evaluate() const noexcept = 0;
+
+    template <typename To>
+    [[nodiscard]] To* as() noexcept
+    {
+        return dynamic_cast<To*>(this);
+    }
 };
 
 class [[nodiscard]] EmptyStatement final : public Statement

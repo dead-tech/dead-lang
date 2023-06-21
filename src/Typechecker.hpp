@@ -189,19 +189,17 @@ class [[nodiscard]] Typechecker
 
     [[nodiscard]] static bool is_valid_lvalue(const std::shared_ptr<Expression>& expression) noexcept
     {
-        if (const auto unary_expression =
-                std::dynamic_pointer_cast<UnaryExpression>(expression)) {
+        if (auto* const unary_expression = expression->as<UnaryExpression>()) {
             return unary_expression->operator_type() == Token::Type::STAR;
         }
 
-        if (const auto binary_expression =
-                std::dynamic_pointer_cast<BinaryExpression>(expression)) {
+        if (auto* const binary_expression = expression->as<BinaryExpression>()) {
             return binary_expression->operator_type() == Token::Type::DOT ||
                    binary_expression->operator_type() == Token::Type::ARROW;
         }
 
-        return std::dynamic_pointer_cast<VariableExpression>(expression) ||
-               std::dynamic_pointer_cast<IndexOperatorExpression>(expression);
+        return (expression->as<VariableExpression>() != nullptr) ||
+               (expression->as<IndexOperatorExpression>() != nullptr);
     }
 
     [[nodiscard]] static constexpr Type
