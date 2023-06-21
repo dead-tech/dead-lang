@@ -541,17 +541,6 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
         return nullptr;
     }
 
-    // FIXME: This only works if the expression is of type VariableExpression.
-    //        We need to have a way of checking if the result of the expression is of enum type.
-    //     Check if the expression resolves to an actual enum type.
-    const auto variable_declaration =
-        m_current_environment->find(match_expression->evaluate());
-    if (!variable_declaration) {
-        m_supervisor->push_error(
-            "expected enum type after match keyword while parsing", match_token->position());
-        return nullptr;
-    }
-
     if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
         m_supervisor->push_error(
             "expected ')' after match expression while parsing", previous_position());
@@ -571,18 +560,23 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
     std::vector<std::string>               destructuring;
 
     consume_tokens_until(Token::Type::RIGHT_BRACE, [this, &match_cases, &destructuring] {
-        const auto label = parse_identifier();
+        const auto label = parse_expression();
+
+        const auto binary_expression = std::dynamic_pointer_cast<BinaryExpression>(label);
+        if (!binary_expression ||
+            binary_expression->operator_type() != Token::Type::COLON_COLON) {
+            m_supervisor->push_error(
+                "expected enum variant while parsing match cases", previous_position());
+            return;
+        }
+
+        const auto call_expression =
+            std::dynamic_pointer_cast<FunctionCallExpression>(binary_expression->right());
 
         // Destructuring
-        if (matches_and_consume(Token::Type::LEFT_PAREN)) {
-            consume_tokens_until(Token::Type::RIGHT_PAREN, [this, &destructuring] {
-                if (peek()->matches(Token::Type::COMMA)) { advance(1); }
-                destructuring.push_back(parse_identifier());
-            });
-
-            if (!matches_and_consume(Token::Type::RIGHT_PAREN)) {
-                m_supervisor->push_error("expected ')' after match label destructuring while parsing", previous_position());
-                return;
+        if (call_expression) {
+            for (const auto& argument : call_expression->arguments()) {
+                destructuring.push_back(argument->evaluate());
             }
         }
 
@@ -608,7 +602,7 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
 
         skip_newlines();
 
-        match_cases.emplace_back(label, destructuring, BlockStatement(body));
+        match_cases.emplace_back(binary_expression, destructuring, BlockStatement(body));
         destructuring.clear();
     });
 
@@ -626,11 +620,7 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
 
     skip_newlines();
 
-    const auto custom_type =
-        std::get<Typechecker::CustomType>(variable_declaration->type.variant());
-
-    return std::make_shared<MatchStatement>(
-        MatchStatement(m_custom_types[custom_type], match_expression, match_cases));
+    return std::make_shared<MatchStatement>(MatchStatement(match_expression, match_cases));
 }
 
 std::shared_ptr<Expression> Parser::parse_expression()

@@ -227,20 +227,16 @@ class [[nodiscard]] MatchStatement final : public Statement
   public:
     struct [[nodiscard]] MatchCase
     {
-        std::string              label;
-        std::vector<std::string> destructuring;
-        BlockStatement           body;
+        std::shared_ptr<BinaryExpression> label;
+        std::vector<std::string>          destructuring;
+        BlockStatement                    body;
     };
 
-    MatchStatement(
-        std::shared_ptr<Statement>         enum_statement,
-        const std::shared_ptr<Expression>& expression,
-        std::vector<MatchCase>             cases) noexcept;
+    MatchStatement(const std::shared_ptr<Expression>& expression, std::vector<MatchCase> cases) noexcept;
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
-    std::shared_ptr<Statement>  m_enum;
     std::shared_ptr<Expression> m_expression;
     std::vector<MatchCase>      m_cases;
 };

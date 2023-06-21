@@ -399,12 +399,8 @@ std::string EnumStatement::evaluate() const noexcept
     return c_enum_code;
 }
 
-MatchStatement::MatchStatement(
-    std::shared_ptr<Statement>         enum_statement,
-    const std::shared_ptr<Expression>& expression,
-    std::vector<MatchCase>             cases) noexcept
-    : m_enum{std::move(enum_statement)},
-      m_expression{expression},
+MatchStatement::MatchStatement(const std::shared_ptr<Expression>& expression, std::vector<MatchCase> cases) noexcept
+    : m_expression{expression},
       m_cases{std::move(cases)}
 {
 }
@@ -413,27 +409,30 @@ std::string MatchStatement::evaluate() const noexcept
 {
     std::string c_match_code;
 
-    const auto enum_statement = std::dynamic_pointer_cast<EnumStatement>(m_enum);
-
     c_match_code += fmt::format("switch({}.variant) {{\n", m_expression->evaluate());
 
     for (const auto& [label, destructuring, body] : m_cases) {
-        if (label != "_") {
-            c_match_code +=
-                fmt::format("case {}_{}_Var: {{\n", enum_statement->name(), label);
+        std::string evaluated_label = label->left()->evaluate();
+        if (const auto call_expression =
+                std::dynamic_pointer_cast<FunctionCallExpression>(label->right());
+            call_expression) {
+            evaluated_label += "_" + call_expression->function_name()->evaluate();
+        } else {
+            evaluated_label += "_" + label->right()->evaluate();
+        }
+
+        if (evaluated_label != "_") {
+            c_match_code += fmt::format("case {}_Var: {{\n", evaluated_label);
         } else {
             c_match_code += fmt::format("default: {{\n");
         }
 
         for (std::size_t i = 0; i < destructuring.size(); ++i) {
-            const auto fields = enum_statement->variants().at(label);
             c_match_code += fmt::format(
-                "const {} {} = {}.{}_{}_Var_data.data_{};",
-                transpile_type(fields[i]),
+                "const auto {} = {}.{}_Var_data.data_{};\n",
                 destructuring[i],
                 m_expression->evaluate(),
-                enum_statement->name(),
-                label,
+                evaluated_label,
                 i);
         }
 

@@ -67,10 +67,20 @@ class [[nodiscard]] BinaryExpression final : public Expression
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
+    [[nodiscard]] std::shared_ptr<Expression> left() const noexcept
+    {
+        return m_left;
+    }
+
     [[nodiscard]] Token::Type operator_type() const noexcept
     {
         return m_operator;
     };
+
+    [[nodiscard]] std::shared_ptr<Expression> right() const noexcept
+    {
+        return m_right;
+    }
 
   private:
     std::shared_ptr<Expression> m_left;
@@ -95,6 +105,16 @@ class [[nodiscard]] FunctionCallExpression final : public Expression
     FunctionCallExpression(
         std::shared_ptr<Expression>              function_name,
         std::vector<std::shared_ptr<Expression>> arguments) noexcept;
+
+    [[nodiscard]] std::shared_ptr<Expression> function_name() const noexcept
+    {
+        return m_function_name;
+    }
+
+    [[nodiscard]] std::vector<std::shared_ptr<Expression>> arguments() const noexcept
+    {
+        return m_arguments;
+    }
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
