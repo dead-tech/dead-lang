@@ -1,16 +1,56 @@
 #include "Parser.hpp"
 
-std::shared_ptr<Statement>
+#include <dtsutil/filesystem.hpp>
+
+std::vector<ModuleStatement>
 Parser::parse(std::vector<Token> tokens, const std::shared_ptr<Supervisor>& supervisor) noexcept
 {
     Parser parser(std::move(tokens), supervisor);
-    return parser.parse_module();
+    return parser.parse_project();
 }
 
 Parser::Parser(std::vector<Token>&& tokens, const std::shared_ptr<Supervisor>& supervisor) noexcept
     : Iterator(tokens),
       m_supervisor{supervisor}
 {
+}
+
+std::vector<ModuleStatement> Parser::parse_project() noexcept
+{
+    std::vector<ModuleStatement> modules;
+
+    while (!eof() && !m_supervisor->has_errors()) {
+        if (eol()) {
+            advance(1);
+            continue;
+        }
+
+        if (peek()->matches(Token::Type::IMPORT)) {
+            advance(1); // Skip the import token
+
+            const auto import_module = fmt::format("{}.dl", next()->lexeme());
+            const auto import_module_path =
+                m_supervisor->project_root().parent_path() / import_module;
+
+            const auto module_content = dts::read_file(import_module_path.string());
+            if (!module_content) {
+                m_supervisor->push_error(
+                    fmt::format("Could not import module: {}", import_module),
+                    previous_position());
+                return {};
+            }
+
+            const auto lexed_tokens = Lexer::lex(*module_content, m_supervisor);
+
+            const auto imported_modules = Parser::parse(lexed_tokens, m_supervisor);
+            modules.insert(
+                modules.end(), imported_modules.begin(), imported_modules.end());
+        }
+
+        modules.push_back(*parse_module()->as<ModuleStatement>());
+    }
+
+    return modules;
 }
 
 std::shared_ptr<Statement> Parser::parse_module() noexcept

@@ -14,6 +14,7 @@
 #include "Environment.hpp"
 #include "Expression.hpp"
 #include "Iterator.hpp"
+#include "Lexer.hpp"
 #include "Statement.hpp"
 #include "Supervisor.hpp"
 #include "Token.hpp"
@@ -34,11 +35,14 @@ struct hash<Typechecker::CustomType>
 class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
 {
   public:
-    [[nodiscard]] static std::shared_ptr<Statement>
+    [[nodiscard]] static std::vector<ModuleStatement>
     parse(std::vector<Token> tokens, const std::shared_ptr<Supervisor>& supervisor) noexcept;
 
   private:
     explicit Parser(std::vector<Token>&& tokens, const std::shared_ptr<Supervisor>& supervisor) noexcept;
+
+    // Project
+    [[nodiscard]] std::vector<ModuleStatement> parse_project() noexcept;
 
     // Statements
     [[nodiscard]] std::shared_ptr<Statement> parse_module() noexcept;
@@ -57,6 +61,7 @@ class [[nodiscard]] Parser : public Iterator<std::vector<Token>>
     [[nodiscard]] std::shared_ptr<Statement> parse_struct_statement() noexcept;
     [[nodiscard]] std::shared_ptr<Statement> parse_enum_statement() noexcept;
     [[nodiscard]] std::shared_ptr<Statement> parse_match_statement() noexcept;
+    [[nodiscard]] std::shared_ptr<Statement> parse_import_statement() noexcept;
 
     // Expressions
     [[nodiscard]] std::shared_ptr<Expression> parse_expression();

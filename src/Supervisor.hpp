@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <vector>
 
 #include <fmt/color.h>
@@ -11,7 +12,8 @@
 class [[nodiscard]] Supervisor
 {
   public:
-    [[nodiscard]] static std::shared_ptr<Supervisor> create(std::string file_contents) noexcept;
+    [[nodiscard]] static std::shared_ptr<Supervisor>
+    create(std::string file_contents, std::string project_root_file) noexcept;
 
     void push_error(const DLError& error) noexcept;
 
@@ -28,8 +30,13 @@ class [[nodiscard]] Supervisor
         return !m_errors.empty();
     }
 
+    [[nodiscard]] constexpr const std::filesystem::path& project_root() const noexcept
+    {
+        return m_project_root;
+    }
+
   private:
-    explicit Supervisor(std::string&& file_contents) noexcept;
+    explicit Supervisor(std::string&& file_contents, std::filesystem::path project_root) noexcept;
 
     [[nodiscard]] std::vector<Position> compute_line_positions() const noexcept;
 
@@ -37,4 +44,5 @@ class [[nodiscard]] Supervisor
 
     mutable std::vector<DLError> m_errors;
     std::string                  m_file_contents;
+    std::filesystem::path        m_project_root;
 };

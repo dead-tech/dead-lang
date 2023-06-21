@@ -15,7 +15,7 @@ enum class FileStreamError : std::uint64_t {
     UnableToOpen
 };
 
-[[nodiscard]] auto read_file(const std::string_view raw_path) noexcept
+[[nodiscard]] inline auto read_file(const std::string_view raw_path) noexcept
   -> std::expected<std::string, FileStreamError> {
     const auto path = std::filesystem::path(raw_path);
 

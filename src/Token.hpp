@@ -74,6 +74,7 @@ class [[nodiscard]] Token
         ENUM,
         MATCH,
         MODULE,
+        IMPORT,
 
         // Literals
         IDENTIFIER,
@@ -123,6 +124,7 @@ class [[nodiscard]] Token
         if (lexeme == "enum") { return Type::ENUM; }
         if (lexeme == "match") { return Type::MATCH; }
         if (lexeme == "module") { return Type::MODULE; }
+        if (lexeme == "import") { return Type::IMPORT; }
         return {};
     }
 
@@ -217,7 +219,7 @@ class [[nodiscard]] Token
 
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
     {
-        static_assert(static_cast<std::uint8_t>(Type::MAX) == 52, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
+        static_assert(static_cast<std::uint8_t>(Type::MAX) == 53, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
 
         switch (type) {
             case Type::FN: {
@@ -360,6 +362,9 @@ class [[nodiscard]] Token
             }
             case Type::MODULE: {
                 return "module";
+            }
+            case Type::IMPORT: {
+                return "import";
             }
             default: {
                 return "not implemented";

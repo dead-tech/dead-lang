@@ -1,12 +1,16 @@
 #include "Supervisor.hpp"
 
-std::shared_ptr<Supervisor> Supervisor::create(std::string file_contents) noexcept
+#include <utility>
+
+std::shared_ptr<Supervisor> Supervisor::create(std::string file_contents, std::string project_root_file) noexcept
 {
-    return std::make_shared<Supervisor>(Supervisor(std::move(file_contents)));
+    return std::make_shared<Supervisor>(Supervisor(
+        std::move(file_contents), std::filesystem::path(std::move(project_root_file))));
 }
 
-Supervisor::Supervisor(std::string&& file_contents) noexcept
-    : m_file_contents{file_contents}
+Supervisor::Supervisor(std::string&& file_contents, std::filesystem::path project_root) noexcept
+    : m_file_contents{file_contents},
+      m_project_root{std::move(project_root)}
 {
 }
 

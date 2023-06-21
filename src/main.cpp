@@ -47,9 +47,9 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    const auto input_file_path = parser.get<std::string>("file");
+    const auto project_root_file = parser.get<std::string>("file");
 
-    const auto file_content = dts::read_file(input_file_path);
+    const auto file_content = dts::read_file(project_root_file);
     if (!file_content.has_value()) {
         fmt::print(
             stderr,
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
             file_content.error());
     }
 
-    const auto supervisor = Supervisor::create(file_content.value());
+    const auto supervisor = Supervisor::create(file_content.value(), project_root_file);
 
     const auto tokens = Lexer::lex(file_content.value(), supervisor);
     if (supervisor->has_errors()) {
@@ -71,13 +71,16 @@ int main(int argc, char** argv)
         for (const auto& token : tokens) { fmt::println(stderr, "{}", token); }
     }
 
-    const auto ast = Parser::parse(tokens, supervisor);
+    const auto modules = Parser::parse(tokens, supervisor);
     if (supervisor->has_errors()) {
         supervisor->dump_errors();
         return 1;
     }
 
-    const auto transpiled_file_content = ast->evaluate();
+    const auto transpiled_file_content = std::accumulate(
+        modules.begin(), modules.end(), std::string{}, [](const auto& acc, const auto& modul) {
+            return acc + fmt::format("{}\n\n", modul.evaluate());
+        });
 
     const auto output_to_stdout = parser.get<bool>("--output-to-stdout");
     if (output_to_stdout) {
@@ -98,7 +101,7 @@ int main(int argc, char** argv)
             stderr,
             fmt::emphasis::bold | fmt::fg(fmt::color::red),
             "error while invoking gcc to compile the transpiled file: {}",
-            input_file_path);
+            project_root_file);
         return 1;
     }
 
@@ -126,7 +129,7 @@ int main(int argc, char** argv)
                 stderr,
                 fmt::emphasis::bold | fmt::fg(fmt::color::red),
                 "error while invoking the compiled binary: {}",
-                input_file_path);
+                project_root_file);
             return 1;
         }
     }
