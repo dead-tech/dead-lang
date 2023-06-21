@@ -73,6 +73,7 @@ class [[nodiscard]] Token
         STRUCT,
         ENUM,
         MATCH,
+        MODULE,
 
         // Literals
         IDENTIFIER,
@@ -121,6 +122,7 @@ class [[nodiscard]] Token
         if (lexeme == "or") { return Type::OR; }
         if (lexeme == "enum") { return Type::ENUM; }
         if (lexeme == "match") { return Type::MATCH; }
+        if (lexeme == "module") { return Type::MODULE; }
         return {};
     }
 
@@ -215,7 +217,7 @@ class [[nodiscard]] Token
 
     [[nodiscard]] constexpr static std::string type_to_string(const Type& type) noexcept
     {
-        static_assert(static_cast<std::uint8_t>(Type::MAX) == 51, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
+        static_assert(static_cast<std::uint8_t>(Type::MAX) == 52, "Exhaustive handling of all Token::Type enum variants is required."); // NOLINT
 
         switch (type) {
             case Type::FN: {
@@ -355,6 +357,9 @@ class [[nodiscard]] Token
             }
             case Type::LESS_EQUAL: {
                 return "<=";
+            }
+            case Type::MODULE: {
+                return "module";
             }
             default: {
                 return "not implemented";

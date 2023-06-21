@@ -15,7 +15,7 @@ Parser::Parser(std::vector<Token>&& tokens, const std::shared_ptr<Supervisor>& s
 
 std::shared_ptr<Statement> Parser::parse_module() noexcept
 {
-    const std::string name = "main";
+    std::string name = "main";
 
     std::vector<std::string>                c_includes;
     std::vector<std::shared_ptr<Statement>> structs;
@@ -28,7 +28,10 @@ std::shared_ptr<Statement> Parser::parse_module() noexcept
             continue;
         }
 
-        if (peek()->matches(Token::Type::C_INCLUDE)) {
+        if (peek()->matches(Token::Type::MODULE)) {
+            advance(1); // Skip the module token
+            name = next()->lexeme();
+        } else if (peek()->matches(Token::Type::C_INCLUDE)) {
             c_includes.push_back(parse_c_include_statement());
         } else if (peek()->matches(Token::Type::STRUCT)) {
             structs.push_back(parse_struct_statement());
