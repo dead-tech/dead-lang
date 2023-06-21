@@ -32,12 +32,12 @@ class [[nodiscard]] Typechecker
     {
         std::string name;
         Token::Type type;
-
-        bool operator==(const CustomType& other) const noexcept
-        {
-            return name == other.name && type == other.type;
-        }
     };
+
+    friend bool operator==(const CustomType& lhs, const CustomType& rhs) noexcept
+    {
+        return lhs.name == rhs.name && lhs.type == rhs.type;
+    }
 
     struct [[nodiscard]] Type
     {
