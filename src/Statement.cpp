@@ -6,6 +6,17 @@
 namespace
 {
 
+[[nodiscard]] std::string expand_comma_separated_iterable(auto&& iterable, auto&& callable)
+{
+    return std::accumulate(
+        iterable.begin(), iterable.end(), std::string{}, [&](const auto& acc, const auto& elem) {
+            if (&elem != &iterable.back()) {
+                return acc + callable(elem) + ", ";
+            }
+
+            return acc + callable(elem);
+        });
+}
 
 [[nodiscard]] std::string transpile_type(const Typechecker::Type& type)
 {
@@ -29,12 +40,19 @@ namespace
     return "unreachable";
 }
 
+[[nodiscard]] std::string compute_mutability(
+    const Typechecker::VariableDeclaration& variable_declaration,
+    const bool                              ignore_mutability = false)
+{
+    return !variable_declaration.is_mutable && !ignore_mutability ? "const " : "";
+}
+
 [[nodiscard]] std::string transpile_variable_declaration(
     const Typechecker::VariableDeclaration& variable_declaration,
-    bool                                    ignore_mutability = false)
+    const bool                              ignore_mutability = false)
 {
     const std::string mutability =
-        variable_declaration.is_mutable || ignore_mutability ? "" : "const ";
+        compute_mutability(variable_declaration, ignore_mutability);
     const std::string variable_type = transpile_type(variable_declaration.type);
 
     if (Typechecker::is_fixed_size_array(variable_declaration.type_extensions)) {
@@ -95,23 +113,17 @@ ModuleStatement::ModuleStatement(
 
 std::string ModuleStatement::evaluate() const noexcept
 {
-    std::string c_module_code;
+    const auto c_includes = std::accumulate(
+        m_c_includes.begin(), m_c_includes.end(), std::string{}, [](const auto& acc, const auto& c_include) {
+            return acc +
+                   fmt::format("#include <{}>\n", c_include.substr(1, c_include.size() - 2));
+        });
 
-    for (const auto& c_include : m_c_includes) {
-        c_module_code +=
-            fmt::format("#include <{}>\n", c_include.substr(1, c_include.size() - 2));
-    }
-    c_module_code += "\n";
+    const auto enums_code     = m_enums.evaluate();
+    const auto structs_code   = m_structs.evaluate();
+    const auto functions_code = m_functions.evaluate();
 
-    c_module_code += m_enums.evaluate();
-    c_module_code += "\n";
-
-    c_module_code += m_structs.evaluate();
-    c_module_code += "\n";
-
-    c_module_code += m_functions.evaluate();
-
-    return c_module_code;
+    return fmt::format("{}\n{}\n{}\n{}", c_includes, enums_code, structs_code, functions_code);
 }
 
 FunctionStatement::FunctionStatement(
@@ -128,22 +140,18 @@ FunctionStatement::FunctionStatement(
 
 std::string FunctionStatement::evaluate() const noexcept
 {
-    std::string c_function_code;
-
+    // FIXME: Return value should be a proper type instead of a std::string
     const std::string return_value =
         Typechecker::builtin_type_from_string(m_return_type) != Typechecker::BuiltinType::NONE
             ? Typechecker::builtin_type_to_c_type(m_return_type)
             : m_return_type;
 
-    std::string args;
-    for (const auto& arg : m_args) {
-        args += transpile_variable_declaration(arg);
-        if (&arg != &m_args.back()) { args += ", "; }
-    }
+    const auto args = expand_comma_separated_iterable(m_args, [](const auto& arg) {
+        return transpile_variable_declaration(arg);
+    });
 
-    c_function_code += fmt::format(
+    return fmt::format(
         "{} {}({}) {{\n{}}}\n", return_value, m_name, args, m_body.evaluate());
-    return c_function_code;
 }
 
 IfStatement::IfStatement(std::shared_ptr<Expression> condition, BlockStatement then_block, BlockStatement else_block) noexcept
@@ -155,19 +163,14 @@ IfStatement::IfStatement(std::shared_ptr<Expression> condition, BlockStatement t
 
 std::string IfStatement::evaluate() const noexcept
 {
-    std::string c_if_code;
+    const auto then_block = fmt::format(
+        "if ({}) {{\n{}\n}}", m_condition->evaluate(), m_then_block.evaluate());
 
-    c_if_code += "if (" + m_condition->evaluate() + ") {\n";
-    c_if_code += m_then_block.evaluate();
+    const auto else_block = !m_else_block.empty()
+                              ? fmt::format(" else {{\n{}\n}}", m_else_block.evaluate())
+                              : "";
 
-    if (!m_else_block.empty()) {
-        c_if_code += "} else {\n";
-        c_if_code += m_else_block.evaluate();
-    }
-
-    c_if_code += "}\n";
-
-    return c_if_code;
+    return fmt::format("{}{}", then_block, else_block);
 }
 
 ReturnStatement::ReturnStatement(std::shared_ptr<Expression> expression) noexcept
@@ -177,7 +180,7 @@ ReturnStatement::ReturnStatement(std::shared_ptr<Expression> expression) noexcep
 
 std::string ReturnStatement::evaluate() const noexcept
 {
-    return "return " + m_expression->evaluate() + ";";
+    return fmt::format("return {};", m_expression->evaluate());
 }
 
 VariableStatement::VariableStatement(
@@ -204,13 +207,7 @@ WhileStatement::WhileStatement(std::shared_ptr<Expression> condition, BlockState
 
 std::string WhileStatement::evaluate() const noexcept
 {
-    std::string c_while_code;
-
-    c_while_code += "while (" + m_condition->evaluate() + ") {\n";
-    c_while_code += m_body.evaluate();
-    c_while_code += "}\n";
-
-    return c_while_code;
+    return fmt::format("while ({}) {{\n{}\n}}", m_condition->evaluate(), m_body.evaluate());
 }
 
 ForStatement::ForStatement(
@@ -242,7 +239,7 @@ ExpressionStatement::ExpressionStatement(std::shared_ptr<Expression> expression)
 
 std::string ExpressionStatement::evaluate() const noexcept
 {
-    return m_expression->evaluate() + ";";
+    return fmt::format("{};", m_expression->evaluate());
 }
 
 
@@ -256,19 +253,11 @@ ArrayStatement::ArrayStatement(
 
 std::string ArrayStatement::evaluate() const noexcept
 {
-    const std::string mutability = m_variable_declaration.is_mutable ? "" : "const ";
+    const auto array_elements = expand_comma_separated_iterable(
+        m_elements, [](const auto& element) { return element->evaluate(); });
 
-    std::string c_array_code;
-    c_array_code +=
-        fmt::format("{} = {{", transpile_variable_declaration(m_variable_declaration));
-
-    for (const auto& element : m_elements) {
-        c_array_code += element->evaluate();
-        if (&element != &m_elements.back()) { c_array_code += ", "; }
-    }
-
-    c_array_code += "};";
-    return c_array_code;
+    return fmt::format(
+        "{} = {{{}}};\n", transpile_variable_declaration(m_variable_declaration), array_elements);
 }
 
 StructStatement::StructStatement(std::string name, std::vector<Typechecker::VariableDeclaration> member_variables) noexcept
@@ -279,49 +268,36 @@ StructStatement::StructStatement(std::string name, std::vector<Typechecker::Vari
 
 std::string StructStatement::evaluate() const noexcept
 {
-    std::string c_struct_code;
-
-    c_struct_code += "struct " + m_name + " {\n";
-    for (const auto& member_variable : m_member_variables) {
-        c_struct_code += fmt::format(
-            "    {};\n", transpile_variable_declaration(member_variable, true));
-    }
-    c_struct_code += fmt::format("}} {};\n", m_name);
-
-    // Automatically generate a constructor
-    c_struct_code += fmt::format("\n{} {}_new(", m_name, m_name);
-    for (const auto& member_variable : m_member_variables) {
-        c_struct_code +=
-            fmt::format("{}", transpile_variable_declaration(member_variable, true));
-        if (&member_variable != &m_member_variables.back()) {
-            c_struct_code += ", ";
-        }
-    }
-    c_struct_code += ") {\n";
-
-    std::string temporary_instance_name;
-    std::ranges::transform(
-        m_name, std::back_inserter(temporary_instance_name), [](const auto ch) {
-            return std::tolower(ch);
+    const auto member_variables = std::accumulate(
+        m_member_variables.begin(),
+        m_member_variables.end(),
+        std::string{},
+        [](const auto& acc, const auto& member_variable) {
+            return acc + fmt::format("{};\n", transpile_variable_declaration(member_variable, true));
         });
-    c_struct_code += fmt::format("    {} {};\n", m_name, temporary_instance_name);
 
-    for (const auto& member_variable : m_member_variables) {
-        c_struct_code += fmt::format(
-            "    {}.{} = {};\n",
-            temporary_instance_name,
-            member_variable.name,
-            member_variable.name);
-    }
-    c_struct_code += fmt::format("    return {};\n", temporary_instance_name);
-    c_struct_code += "}\n";
+    const auto default_constructor_params =
+        expand_comma_separated_iterable(m_member_variables, [](const auto& member_variable) {
+            return transpile_variable_declaration(member_variable, true);
+        });
 
-    return c_struct_code;
+    const auto default_constructor_arguments =
+        expand_comma_separated_iterable(m_member_variables, [](const auto& member_variable) {
+            return fmt::format(".{} = {}", member_variable.name, member_variable.name);
+        });
+
+    const auto default_constructor_body =
+        fmt::format("return {{ {} }};", default_constructor_arguments);
+
+    const auto default_constructor = fmt::format(
+        "static {} create({}) {{\n{}\n}}", m_name, default_constructor_params, default_constructor_body);
+
+    return fmt::format("struct {} {{\n{}\n{}\n}};", m_name, member_variables, default_constructor);
 }
 
 EnumStatement::EnumStatement(std::string name, EnumStatement::EnumVariant variants) noexcept
     : m_name{std::move(name)},
-      m_variants{std::move(variants)}
+      m_enum_variants{std::move(variants)}
 {
 }
 
@@ -329,64 +305,65 @@ std::string EnumStatement::evaluate() const noexcept
 {
     std::string c_enum_code;
 
-    c_enum_code += "enum class " + m_name + " : unsigned long long int {\n";
-    for (const auto& [name, fields] : m_variants) {
-        c_enum_code += fmt::format("    {},\n", name);
-    }
-    c_enum_code += "};\n\n";
+    const auto* const underlying_type = "unsigned long long int";
+
+    const auto enum_variants = std::accumulate(
+        m_enum_variants.begin(),
+        m_enum_variants.end(),
+        std::string{},
+        [](const auto& acc, const auto& enum_variant) {
+            return acc + fmt::format("{},\n", enum_variant.first);
+        });
+
+    const auto enum_code =
+        fmt::format("enum class {} : {} {{\n{}\n}};", m_name, underlying_type, enum_variants);
+
 
     c_enum_code += fmt::format("struct __dl_{} {{\n", m_name);
     c_enum_code += fmt::format("    {} type;\n", m_name);
     c_enum_code += "    union {\n";
-    for (const auto& [name, fields] : m_variants) {
+
+    std::stringstream associated_union_fields{};
+    for (const auto& [name, fields] : m_enum_variants) {
         const auto struct_fields = std::accumulate(
             fields.begin(), fields.end(), std::string{}, [i = 0](const auto& acc, const auto& field) mutable {
-                return acc + transpile_type(field) + fmt::format(" data_{}", i++) + "; ";
+                return acc + fmt::format("{} data_{};\n", transpile_type(field), i++);
             });
-
-        c_enum_code +=
-            fmt::format("        struct {{ {} }} {}_data;\n", struct_fields, name);
+        associated_union_fields
+            << fmt::format("struct {{ {} }} {}_data;\n", struct_fields, name);
     }
 
-    c_enum_code += "    };\n";
+    const auto associated_union_code =
+        fmt::format("union {{\n{}\n}};", associated_union_fields.str());
 
-    for (const auto& [name, fields] : m_variants) {
-        const auto params = std::accumulate(
-            fields.begin(),
-            fields.end(),
-            std::string{},
-            [&name, &fields, it = 0](const auto& acc, const auto& field) mutable {
-                if (&field != &fields.back()) {
-                    return acc + fmt::format("{} {}_{}, ", transpile_type(field), name, it++);
-                }
-
-                return acc + fmt::format("{} {}_{}", transpile_type(field), name, it++);
+    std::stringstream associated_structs_default_constructors = {};
+    for (const auto& [name, fields] : m_enum_variants) {
+        const auto params = expand_comma_separated_iterable(
+            fields, [&name, it = 0](const auto& field) mutable {
+                return fmt::format("{} {}_{}", transpile_type(field), name, it++);
             });
 
-        c_enum_code += fmt::format("    static __dl_{} {}({}) {{\n", m_name, name, params);
-
-        const auto arguments = std::accumulate(
-            fields.begin(),
-            fields.end(),
-            std::string{},
-            [&name, &fields, it = 0](const auto& acc, const auto& field) mutable {
-                if (&field != &fields.back()) {
-                    auto retval = acc + fmt::format(".data_{} = {}_{}, ", it, name, it);
-                    it++;
-                    return retval;
-                }
-
-                auto retval = acc + fmt::format(".data_{} = {}_{}", it, name, it);
+        const auto arguments = expand_comma_separated_iterable(
+            fields, [&name, it = 0]([[maybe_unused]] const auto& field) mutable {
+                auto retval = fmt::format(".data_{} = {}_{}", it, name, it);
                 it++;
                 return retval;
             });
 
-        c_enum_code +=
-            fmt::format("        return __dl_{} {{ .type = {}::{}, .{}_data = {{ {} }} }};\n    }}\n", m_name, m_name, name, name, arguments);
+        const auto associated_struct_default_constructor_body = fmt::format(
+            "return __dl_{} {{ .type = {}::{}, .{}_data = {{ {} }} }};", m_name, m_name, name, name, arguments);
+        associated_structs_default_constructors << fmt::format(
+            "static __dl_{} {}({}){{\n{}\n}}", m_name, name, params, associated_struct_default_constructor_body);
     }
 
-    c_enum_code += "};\n\n";
-    return c_enum_code;
+    const auto associated_struct_code = fmt::format(
+        "struct __dl_{} {{\n{} type;\n{}\n{}\n}};",
+        m_name,
+        m_name,
+        associated_union_code,
+        associated_structs_default_constructors.str());
+
+    return fmt::format("{}\n{}\n", enum_code, associated_struct_code);
 }
 
 MatchStatement::MatchStatement(const std::shared_ptr<Expression>& expression, std::vector<MatchCase> cases) noexcept
@@ -397,10 +374,7 @@ MatchStatement::MatchStatement(const std::shared_ptr<Expression>& expression, st
 
 std::string MatchStatement::evaluate() const noexcept
 {
-    std::string c_match_code;
-
-    c_match_code += fmt::format("switch({}.type) {{\n", m_expression->evaluate());
-
+    std::stringstream match_cases = {};
     for (const auto& [label, destructuring, body] : m_cases) {
         std::string enum_variant;
         if (const auto call_expression =
@@ -415,25 +389,27 @@ std::string MatchStatement::evaluate() const noexcept
             fmt::format("{}::{}", label->enum_base()->evaluate(), enum_variant);
 
         if (evaluated_label != "_") {
-            c_match_code += fmt::format("case {}: {{\n", evaluated_label);
+            match_cases << fmt::format("case {}: {{\n", evaluated_label);
         } else {
-            c_match_code += fmt::format("default: {{\n");
+            match_cases << fmt::format("default: {{\n");
         }
 
-        for (std::size_t i = 0; i < destructuring.size(); ++i) {
-            c_match_code += fmt::format(
-                "    const auto {} = {}.{}_data.data_{};\n",
-                destructuring[i],
-                m_expression->evaluate(),
-                enum_variant,
-                i);
-        }
+        const auto destructures = std::accumulate(
+            destructuring.begin(),
+            destructuring.end(),
+            std::string{},
+            [this, &enum_variant, i = 0](const auto& acc, const auto& destructure) mutable {
+                return acc + fmt::format(
+                                 "const auto {} = {}.{}_data.data_{};\n",
+                                 destructure,
+                                 m_expression->evaluate(),
+                                 enum_variant,
+                                 i++);
+            });
 
-        c_match_code += fmt::format("{}", body.evaluate());
-        c_match_code += "break;\n}\n";
+        match_cases << fmt::format("{}\n{}break;\n}}\n", destructures, body.evaluate());
     }
 
-    c_match_code += "}\n";
-
-    return c_match_code;
+    return fmt::format(
+        "switch ({}.type) {{\n{}\n}}", m_expression->evaluate(), match_cases.str());
 }

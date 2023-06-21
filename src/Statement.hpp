@@ -212,14 +212,14 @@ class [[nodiscard]] EnumStatement final : public Statement
 
     [[nodiscard]] const EnumVariant& variants() const noexcept
     {
-        return m_variants;
+        return m_enum_variants;
     }
 
     [[nodiscard]] std::string evaluate() const noexcept override;
 
   private:
     std::string m_name;
-    EnumVariant m_variants;
+    EnumVariant m_enum_variants;
 };
 
 class [[nodiscard]] MatchStatement final : public Statement
