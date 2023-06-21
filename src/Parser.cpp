@@ -101,13 +101,7 @@ std::shared_ptr<Statement> Parser::parse_function_statement() noexcept
         return nullptr;
     }
 
-    // Skip the newline
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error(
-            "expected newline after function return type while parsing",
-            previous_position());
-        return nullptr;
-    }
+    skip_newlines();
 
     // Parse body
     const auto body = parse_statement_block();
@@ -410,13 +404,7 @@ std::shared_ptr<Statement> Parser::parse_expression_statement()
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error(
-            "expected newline after expression while parsing expression "
-            "statement",
-            previous_position());
-        return nullptr;
-    }
+    skip_newlines();
 
     return std::make_shared<ExpressionStatement>(ExpressionStatement(expression));
 }
@@ -449,11 +437,7 @@ std::shared_ptr<Statement> Parser::parse_array_statement(const Typechecker::Vari
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error(
-            "expected newline after array declaration while parsing", previous_position());
-        return nullptr;
-    }
+    skip_newlines();
 
     return std::make_shared<ArrayStatement>(ArrayStatement(variable_declaration, array_elements));
 }
@@ -485,12 +469,7 @@ std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error(
-            "expected newline after '{' in struct declaration while parsing",
-            previous_position());
-        return nullptr;
-    }
+    skip_newlines();
 
     const std::vector<Typechecker::VariableDeclaration> member_variables =
         parse_member_variables();
@@ -501,11 +480,7 @@ std::shared_ptr<Statement> Parser::parse_struct_statement() noexcept
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error(
-            "expected newline after struct declaration while parsing", previous_position());
-        return nullptr;
-    }
+    skip_newlines();
 
     const auto struct_statement =
         std::make_shared<StructStatement>(StructStatement(struct_name, member_variables));
@@ -530,12 +505,7 @@ std::shared_ptr<Statement> Parser::parse_enum_statement() noexcept
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error(
-            "expected newline after '{' in enum declaration while parsing",
-            previous_position());
-        return nullptr;
-    }
+    skip_newlines();
 
     const auto enum_variants = parse_enum_variants();
 
@@ -545,11 +515,7 @@ std::shared_ptr<Statement> Parser::parse_enum_statement() noexcept
         return nullptr;
     }
 
-    if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-        m_supervisor->push_error(
-            "expected newline after enum declaration while parsing", previous_position());
-        return nullptr;
-    }
+    skip_newlines();
 
     const auto enum_statement =
         std::make_shared<EnumStatement>(EnumStatement(enum_name, enum_variants));
@@ -577,7 +543,7 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
 
     // FIXME: This only works if the expression is of type VariableExpression.
     //        We need to have a way of checking if the result of the expression is of enum type.
-    // Check if the expression resolves to an actual enum type.
+    //     Check if the expression resolves to an actual enum type.
     const auto variable_declaration =
         m_current_environment->find(match_expression->evaluate());
     if (!variable_declaration) {
@@ -598,7 +564,7 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
         return nullptr;
     }
 
-    (void)matches_and_consume(Token::Type::END_OF_LINE);
+    skip_newlines();
 
     // FIXME: Error handling has to be improved a lot here.
     std::vector<MatchStatement::MatchCase> match_cases;
@@ -640,7 +606,7 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
             return;
         }
 
-        (void)matches_and_consume(Token::Type::END_OF_LINE);
+        skip_newlines();
 
         match_cases.emplace_back(label, destructuring, BlockStatement(body));
         destructuring.clear();
@@ -658,7 +624,7 @@ std::shared_ptr<Statement> Parser::parse_match_statement() noexcept
         return nullptr;
     }
 
-    (void)matches_and_consume(Token::Type::END_OF_LINE);
+    skip_newlines();
 
     const auto custom_type =
         std::get<Typechecker::CustomType>(variable_declaration->type.variant());
@@ -1050,11 +1016,7 @@ EnumStatement::EnumVariant Parser::parse_enum_variants() noexcept
             }
         }
 
-        if (!matches_and_consume(Token::Type::END_OF_LINE)) {
-            m_supervisor->push_error(
-                "expected newline after enum variant while parsing", previous_position());
-            return;
-        }
+        skip_newlines();
 
         variants.emplace(variant_name, fields);
     });
