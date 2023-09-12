@@ -1,0 +1,13 @@
+include "stdio.h"
+
+enum Cell {
+    Alive(u32, u32)
+    Dead
+    Invalid
+}
+
+fn main() -> i32 {
+    Cell alive = Cell::Alive(1, 1)
+    Cell dead = Cell::Dead()
+    return 0
+}

@@ -1,0 +1,12 @@
+include "stdio.h"
+
+fn factorial(i32 count) -> i32 {
+    if (count == 0) {
+        return 1
+    }
+    return count * factorial(count - 1)
+}
+
+fn main() -> i32 {
+    return factorial(5)
+}

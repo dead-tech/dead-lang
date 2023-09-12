@@ -1,0 +1,8 @@
+import greetings
+
+module main
+
+fn main() -> i32 {
+    greet("dead man walking!")
+    return 0
+}

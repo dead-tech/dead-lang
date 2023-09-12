@@ -1,0 +1,7 @@
+fn main() -> i32 {
+    if (a and b or b == 1) {
+
+    }
+
+    return 0
+}

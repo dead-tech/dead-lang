@@ -1,0 +1,14 @@
+include "stdio.h"
+
+fn main() -> i32 {
+
+    u32 test = 0
+
+    if (test == 0) {
+        printf("test = 0")
+    } else {
+        printf("test != 0")
+    }
+
+    return 0
+}

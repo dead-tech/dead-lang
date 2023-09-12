@@ -1,0 +1,8 @@
+fn main() -> i32 {
+    mut i32 acc = 0
+    for (mut i32 i = 0; i < 3; ++i) {
+        acc += 1
+    }
+
+    return acc
+}

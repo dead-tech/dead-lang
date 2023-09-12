@@ -1,0 +1,48 @@
+include "stdio.h"
+
+struct Array {
+    i32* data
+    i32  size
+}
+
+fn print_array(Array* array) -> i32 {
+    for (mut i32 i = 0; i < array->size; ++i) {
+        printf("%d,", array->data[i])
+    }
+
+    printf("\n")
+    return 0
+}
+
+fn selection_sort(mut Array* array) -> i32 {
+    for (mut i32 i = 0; i < array->size; ++i) {
+
+        mut i32 min_idx = i
+        for (mut i32 j = i; j < array->size; ++j) {
+            if (array->data[j] < array->data[min_idx]) {
+                min_idx = j
+            }
+        }
+
+        i32 temp      = array->data[i]
+        array->data[i]       = array->data[min_idx]
+        array->data[min_idx] = temp
+    }
+
+    return 0
+}
+
+fn main() -> i32 {
+    mut i32[6] test = [77, 3, 2, 1, 88, 55]
+
+    mut Array array = Array::create(test, 6)
+
+    printf("unsorted array: ")
+    print_array(&array)
+
+    printf("sorted array: ")
+    selection_sort(&array)
+    print_array(&array)
+
+    return 0
+}

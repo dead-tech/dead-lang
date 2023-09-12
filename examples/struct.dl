@@ -1,0 +1,23 @@
+include "stdio.h"
+
+
+struct Iterator {
+    i32 cursor
+    i32* data
+}
+
+fn empty_iterator() -> Iterator {
+    Iterator it = Iterator::create(0, 0)
+    return it
+}
+
+fn set_data(mut Iterator* it, mut i32* data) {
+    it->data = data
+}
+
+fn main() -> i32 {
+    mut i32[3] test = [1, 2, 3]
+    mut Iterator it = empty_iterator()
+    set_data(&it, test)
+    return test[it.cursor]
+}

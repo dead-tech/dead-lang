@@ -1,0 +1,7 @@
+module hello
+
+include "stdio.h"
+
+fn greet(i8* message) {
+    printf("hello hello %s\n", message)
+}

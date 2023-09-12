@@ -1,0 +1,36 @@
+module match
+
+include "stdio.h"
+
+enum Cell {
+    Alive(u32, u32)
+    Dead
+}
+
+fn print_board(mut Cell* board) {
+    for (mut u32 row = 0; row < 2; ++row) {
+        for (mut u32 col = 0; col < 2; ++col) {
+            match (board[row * 2 + col]) {
+                Cell::Alive(x, y) => {
+                    printf("%d ", x + y)
+                }
+                Cell::Dead => {
+                    printf("x ")
+                }
+            }
+        }
+        printf("\n")
+    }
+}
+
+fn main() -> i32 {
+    Cell first = Cell::Alive(0, 0)
+    Cell second = Cell::Dead()
+    Cell third = Cell::Dead()
+    Cell fourth = Cell::Alive(1, 1)
+
+    mut Cell[4] board = [first, second, third, fourth]
+    print_board(board)
+
+    return 0
+}

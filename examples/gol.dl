@@ -1,0 +1,175 @@
+include "stdio.h"
+include "stdlib.h"
+
+
+struct Matrix {
+    u32 rows
+    u32 cols
+    u32** data
+}
+
+fn matrix_allocate(u32 rows, u32 cols) -> Matrix* {
+    mut Matrix* matrix = malloc(1 * 16) // 16 = sizeof(Mat)
+    matrix->rows = rows
+    matrix->cols = cols
+    matrix->data = malloc(8 * rows) // 8 = sizeof(u32*)
+
+    for (mut u32 row = 0; row < rows; ++row) {
+        matrix->data[row] = malloc(4 * cols)
+    }
+
+    return matrix
+}
+
+fn matrix_clone(Matrix* matrix) -> Matrix* {
+    mut Matrix* clone = matrix_allocate(matrix->rows, matrix->cols)
+
+    for (mut u32 row = 0; row < clone->rows; ++row) {
+        for (mut u32 col = 0; col < clone->cols; ++col) {
+            clone->data[row][col] = matrix->data[row][col]
+        }
+    }
+
+    return clone
+}
+
+fn max(u32 lhs, u32 rhs) -> u32{
+    if (lhs >= rhs) {
+        return lhs
+    }
+
+    return rhs
+}
+
+fn min(u32 lhs, u32 rhs) -> u32 {
+    if (lhs <= rhs) {
+        return lhs
+    }
+
+    return rhs
+}
+
+fn alive_neighbours(Matrix* board, u32 cell_row, u32 cell_col) -> u32 {
+    mut u32 neighbours = 0
+
+    u32 row_offset = max(0, cell_row - 1)
+    u32 col_offset = max(0, cell_col - 1)
+
+    u32 max_row = min(cell_row + 2, board->rows)
+    u32 max_col = min(cell_col + 2, board->cols)
+
+    for (mut u32 row = 0; row < board->rows; ++row) {
+        for (mut u32 col = 0; col < board->cols; ++col) {
+            if (board->data[row][col] == 1) {
+                ++neighbours
+            }
+        }
+    }
+
+    return neighbours
+}
+
+fn is_cell_alive(Matrix* board, u32 row, u32 col) -> u32 {
+    return board->data[row][col] == 1
+}
+
+fn game_of_life(Matrix* board) -> Matrix* {
+    mut Matrix* new_state = matrix_clone(board)
+
+    for (mut u32 row = 0; row < board->rows; ++row) {
+        for (mut u32 col = 0; col < board->cols; ++col) {
+            u32 is_alive = is_cell_alive(new_state, row, col)
+            u32 neighbours = alive_neighbours(new_state, row, col)
+
+            if (is_alive and (neighbours < 2 or neighbours > 3)) {
+                new_state->data[row][col] = 0
+                continue
+            }
+
+            if (neighbours == 3) {
+                new_state->data[row][col] = 1
+            }
+        }
+    }
+
+    return new_state
+}
+
+fn print_board(Matrix* board) {
+    printf("\x1b[H")
+    for (mut u32 row = 0; row < board->rows; ++row) {
+        for (mut u32 col = 0; col < board->cols; ++col) {
+            u32 current = board->data[row][col]
+            if (current == 1) {
+                printf("%s ", "O")
+                continue
+            }
+            printf("%s ", " ")
+        }
+        printf("\n")
+    }
+}
+
+fn seed_glider(u32 rows, u32 cols) -> Matrix* {
+    mut Matrix* board = matrix_allocate(rows, cols)
+
+    for (mut u32 row = 0; row < rows; ++row) {
+        for (mut u32 col = 0; col < cols; ++col) {
+            board->data[row][col] = 0
+        }
+    }
+
+    board->data[5][1]  = 1
+    board->data[5][2]  = 1
+    board->data[6][1]  = 1
+    board->data[6][2]  = 1
+    board->data[5][11] = 1
+    board->data[6][11] = 1
+    board->data[7][11] = 1
+    board->data[4][12] = 1
+    board->data[3][13] = 1
+    board->data[3][14] = 1
+    board->data[8][12] = 1
+    board->data[9][13] = 1
+    board->data[9][14] = 1
+    board->data[6][15] = 1
+    board->data[4][16] = 1
+    board->data[5][17] = 1
+    board->data[6][17] = 1
+    board->data[7][17] = 1
+    board->data[6][18] = 1
+    board->data[8][16] = 1
+    board->data[3][21] = 1
+    board->data[4][21] = 1
+    board->data[5][21] = 1
+    board->data[3][22] = 1
+    board->data[4][22] = 1
+    board->data[5][22] = 1
+    board->data[2][23] = 1
+    board->data[6][23] = 1
+    board->data[1][25] = 1
+    board->data[2][25] = 1
+    board->data[6][25] = 1
+    board->data[7][25] = 1
+    board->data[3][35] = 1
+    board->data[4][35] = 1
+    board->data[3][36] = 1
+    board->data[4][36] = 1
+
+    return board
+}
+
+fn main() -> i32 {
+    Matrix* board = seed_glider(30, 64)
+
+    printf("\033c")
+
+    for (mut u32 generation = 0; generation < 1000; ++generation) {
+        print_board(board)
+        printf("%d\n", generation)
+        Matrix* new_state = game_of_life(board)
+        board = new_state
+    }
+
+    return 0
+}
