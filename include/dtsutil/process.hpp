@@ -53,7 +53,7 @@ class [[nodiscard]] ShellCommand {
         m_command.reserve(argc + 1);
 
         for (const auto& word : std::views::split(command, ' ')) {
-            m_command.emplace_back(word);
+            m_command.emplace_back(std::string_view{word});
         }
     }
 
